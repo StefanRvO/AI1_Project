@@ -1,7 +1,9 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 #include "Sokoban_Board.hpp"
+#include "Solver.hpp"
 #include <exception>
+
 namespace po = boost::program_options;
 
 
@@ -39,12 +41,10 @@ int main(int argc, char **argv)
     {
         //Create the board.
         Sokoban_Board board(board_str);
-        for(auto &the_move : board.find_possible_moves())
-        {
-            std::cout << the_move.first << std::endl;
-            std::cout << "(" << the_move.second->pos.x_pos << ",";
-            std::cout << the_move.second->pos.y_pos << ")" << std::endl;
-        }
+        //Create the solver
+        Solver SSolver(&board);
+        //Solve
+        SSolver.solve();
 
         std::cout << board.get_board_str();
     }

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "Sokoban_Box.hpp"
 #include <string>
+#include <map>
 class Sokoban_Board;
 class Sokoban_Board
 {
@@ -11,7 +12,13 @@ class Sokoban_Board
         std::vector< std::vector <Sokoban_Box> > board;
         uint32_t size_x;
         uint32_t size_y;
-        Sokoban_Box *player_box = nullptr;
+        Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
+        std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
+                                        //Made as an hash map for fast access to elements to delete and add.
+                                        //May be a bit weird, and could maybe be changed to another container.
+
+        std::vector<Sokoban_Box *> goals; //Pointers to all goals.
+                                          //Used when calculating heuristics.
 
         //Copy constructor. Create an identical board
         Sokoban_Board(Sokoban_Board &_board);
@@ -47,9 +54,13 @@ class Sokoban_Board
         std::string get_board_str();
         void populate_neighbours();
         std::vector<move> find_possible_moves();
+
+
         static std::vector<move> find_possible_moves_rec(Move_Direction dir,
             Sokoban_Box *search_box, std::vector<Sokoban_Box *> &searched_fields);
 
+        void perform_move(move the_move, bool reverse = false);
+        int32_t get_heuristic();
 
         //Static functions
         static Box_Type parse_char(char chr);

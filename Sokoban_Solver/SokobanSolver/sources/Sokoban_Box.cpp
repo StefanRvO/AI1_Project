@@ -25,40 +25,41 @@ void Sokoban_Box::set_neighbours(Sokoban_Box *_nb_up, Sokoban_Box *_nb_down,
 void Sokoban_Box::change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_box)
 {   //Change the types of the old_box and new_box box, as if the player or box at
     //old pos was moved to new pos.
-
     switch(old_box.type)
     {
         case Box:
-            old_box.change_type(Box_Type::Free);
-            if(new_box.type == Goal) new_box.change_type(Box_Type::Goal_Box);
-            else if(new_box.type == Free) new_box.change_type(Box_Type::Box);
+            old_box.change_type(Free);
+            if(new_box.type == Goal) new_box.change_type(Goal_Box);
+            else if(new_box.type == Free) new_box.change_type(Box);
             else assert(false);
             break;
         case Goal_Box:
-            old_box.change_type(Box_Type::Goal);
-            if(new_box.type == Goal) new_box.change_type(Box_Type::Goal_Box);
-            else if(new_box.type == Free) new_box.change_type(Box_Type::Box);
+            old_box.change_type(Goal);
+            if(new_box.type == Goal) new_box.change_type(Goal_Box);
+            else if(new_box.type == Free) new_box.change_type(Box);
             else assert(false);
             break;
         case Player:
-            old_box.change_type(Box_Type::Free);
-            if(new_box.type == Goal) new_box.change_type(Box_Type::Player_On_Goal);
-            else if(new_box.type == Free) new_box.change_type(Box_Type::Player);
+            old_box.change_type(Free);
+            if(new_box.type == Goal) new_box.change_type(Player_On_Goal);
+            else if(new_box.type == Free) new_box.change_type(Player);
             else assert(false);
             break;
         case Player_On_Goal:
-            old_box.change_type(Box_Type::Goal);
-            if(new_box.type == Goal) new_box.change_type(Box_Type::Player_On_Goal);
-            else if(new_box.type == Free) new_box.change_type(Box_Type::Player);
+            old_box.change_type(Goal);
+            if(new_box.type == Goal) new_box.change_type(Player_On_Goal);
+            else if(new_box.type == Free) new_box.change_type(Player);
             else assert(false);
             break;
         default:
+            std::cout << old_box.type << std::endl;
+            std::cout << old_box.pos.y_pos << " " << old_box.pos.x_pos << std::endl << std::endl;
             assert(false);
     }
 }
 
 
-void Sokoban_Box::move( Move_Direction dir, Sokoban_Box *player_box, bool reverse)
+void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_Direction dir, bool reverse)
 {   Sokoban_Box *new_pos = nullptr;
     Sokoban_Box *new_player_pos = nullptr;
     if(reverse == true)
@@ -66,20 +67,24 @@ void Sokoban_Box::move( Move_Direction dir, Sokoban_Box *player_box, bool revers
         switch(dir)
         {
             case Move_Direction::up:
-                new_pos = this->nb_down;
-                new_player_pos = this->nb_down->nb_down;
+                new_pos = move_box;
+                move_box = move_box->nb_up;
+                new_player_pos = new_pos->nb_down;
                 break;
             case Move_Direction::down:
-                new_pos = this->nb_up;
-                new_player_pos = this->nb_up->nb_up;
+                new_pos = move_box;
+                move_box = move_box->nb_down;
+                new_player_pos = new_pos->nb_up;
                 break;
             case Move_Direction::left:
-                new_pos = this->nb_right;
-                new_player_pos = this->nb_right->nb_right;
+                new_pos = move_box;
+                move_box = move_box->nb_left;
+                new_player_pos = new_pos->nb_right;
                 break;
             case Move_Direction::right:
-                new_pos = this->nb_left;
-                new_player_pos = this->nb_left->nb_left;
+                new_pos = move_box;
+                move_box = move_box->nb_right;
+                new_player_pos = new_pos->nb_left;
                 break;
             default:
                 assert(false);
@@ -90,29 +95,29 @@ void Sokoban_Box::move( Move_Direction dir, Sokoban_Box *player_box, bool revers
         switch(dir)
         {
             case Move_Direction::up:
-                new_pos = this->nb_up;
-                new_player_pos = this->nb_down;
+                new_pos = move_box->nb_up;
+                new_player_pos = move_box->nb_down;
                 break;
             case Move_Direction::down:
-                new_pos = this->nb_down;
-                new_player_pos = this->nb_up;
+                new_pos = move_box->nb_down;
+                new_player_pos = move_box->nb_up;
                 break;
             case Move_Direction::left:
-                new_pos = this->nb_left;
-                new_player_pos = this->nb_right;
+                new_pos = move_box->nb_left;
+                new_player_pos = move_box->nb_right;
                 break;
             case Move_Direction::right:
-                new_pos = this->nb_right;
-                new_player_pos = this->nb_left;
+                new_pos = move_box->nb_right;
+                new_player_pos = move_box->nb_left;
                 break;
             default:
                 assert(false);
         }
     }
-    if(player_box)
-        Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
-
-    Sokoban_Box::change_types_in_move(*this, *new_pos);
+    Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
+    Sokoban_Box::change_types_in_move(*move_box, *new_pos);
+    move_box = new_pos;
+    player_box = new_player_pos;
 }
 
 
@@ -137,7 +142,7 @@ bool Sokoban_Box::is_moveable(Move_Direction dir)
             std::cout << dir << std::endl;
             assert(false);
     }
-    
+
     switch(move_dir_box->type)
     {
         case Box:
@@ -148,4 +153,35 @@ bool Sokoban_Box::is_moveable(Move_Direction dir)
             return true;
     }
 
+}
+
+bool Sokoban_Box::is_deadlocked()
+{
+    //the box is deadlocked if to adjecent neighbours are
+    //Walls
+    bool last_wall = false;
+    if(this->nb_up->type == Wall)
+        last_wall = true;
+    if(this->nb_left->type == Wall)
+    {
+        if(last_wall) return true;
+        else last_wall = true;
+    }
+    else last_wall = false;
+    if(this->nb_down->type == Wall)
+    {
+        if(last_wall) return true;
+        else last_wall = true;
+    }
+    else last_wall = false;
+    if(this->nb_right->type == Wall)
+    {
+        if(last_wall) return true;
+        else last_wall = true;
+    }
+    else last_wall = false;
+    if(this->nb_up->type == Wall)
+        if(last_wall) return true;
+
+    return false;
 }

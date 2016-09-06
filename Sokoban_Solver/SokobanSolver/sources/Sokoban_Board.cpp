@@ -9,15 +9,15 @@ Box_Type Sokoban_Board::parse_char(char chr)
   //Return a Box_Type
     switch(chr)
     {
-        case '#': return Box_Type::Wall;
-        case '*': return Box_Type::Goal_Box;
-        case '.': return Box_Type::Goal;
-        case '$': return Box_Type::Box;
-        case '@': return Box_Type::Player;
-        case '+': return Box_Type::Player_On_Goal;
+        case '#': return Wall;
+        case '*': return Goal_Box;
+        case '.': return Goal;
+        case '$': return Box;
+        case '@': return Player;
+        case '+': return Player_On_Goal;
         case ' ':
         case '-':
-        case '_': return Box_Type::Free;
+        case '_': return Free;
         default:
         throw std::runtime_error(std::string("Trying to parse malformated string!\nProblematic character: ") + chr);
     }
@@ -27,13 +27,13 @@ char Sokoban_Board::get_box_char(Box_Type type)
 {
     switch(type)
     {
-        case Box_Type::Wall:            return '#';
-        case Box_Type::Goal_Box:        return '*';
-        case Box_Type::Goal:            return '.';
-        case Box_Type::Box:             return '$';
-        case Box_Type::Player:          return '@';
-        case Box_Type::Player_On_Goal:  return '+';
-        case Box_Type::Free:            return ' ';
+        case Wall:            return '#';
+        case Goal_Box:        return '*';
+        case Goal:            return '.';
+        case Box:             return '$';
+        case Player:          return '@';
+        case Player_On_Goal:  return '+';
+        case Free:            return ' ';
         default:
         throw std::runtime_error(std::string("Trying to convert invalid type to char.\nThis should not happen!"));
     }
@@ -115,7 +115,7 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
         for(uint32_t y = 0; y < this->size_y; y++)
         {
             if(board_vec[y].size() < x + 1) //Add a wall if the given string has omitted it at the end.
-                collumn.push_back(Sokoban_Box(Box_Type::Wall, {x, y}));
+                collumn.push_back(Sokoban_Box(Wall, {x, y}));
             else
                 collumn.push_back(board_vec[y][x]);
         }
@@ -155,8 +155,12 @@ void Sokoban_Board::populate_neighbours()
             if(x + 1 < this->size_x) right = &this->board[x + 1][y];
             this->board[x][y].set_neighbours(up, down, left, right);
             //Set player box if this is the one.
-            if(this->board[x][y].type == Box_Type::Player or this->board[x][y].type == Box_Type::Player_On_Goal)
+            if(this->board[x][y].type == Player or this->board[x][y].type == Player_On_Goal)
                 this->player_box = &this->board[x][y];
+            else if(this->board[x][y].type == Box or this->board[x][y].type == Goal_Box)
+                this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(&this->board[x][y], &this->board[x][y]));
+            if(this->board[x][y].type == Goal or this->board[x][y].type == Goal_Box or this->board[x][y].type == Player_On_Goal)
+                this->goals.push_back(&this->board[x][y]);
         }
     }
 }
@@ -165,10 +169,10 @@ std::vector<move> Sokoban_Board::find_possible_moves()
 {   //Recursive move finder algorithm. This is probably pretty slow, so we should
     //maybe try to figure out a faster way..?
     std::vector<Sokoban_Box *> searched_fields;
+    searched_fields.reserve(this->size_x * this->size_y);
     //Search all around the player
     std::vector<move> moves;
-    std::cout << "(" << this->player_box->pos.x_pos << ",";
-    std::cout << this->player_box->pos.y_pos << ")" << std::endl;
+    moves.reserve(10);
 
     auto moves_up =     Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields);
     auto moves_down =   Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields);
@@ -185,7 +189,6 @@ std::vector<move> Sokoban_Board::find_possible_moves()
         if(box->type == Free_Searched)       box->type = Free;
         else if(box->type == Goal_Searched)  box->type = Goal;
     }
-    std::cout << std::endl << std::endl;
     return moves;
 }
 
@@ -238,4 +241,49 @@ std::vector<move> Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sok
         moves.insert( moves.end(), std::make_move_iterator(moves_right.begin()), std::make_move_iterator(moves_right.end()));
     }
     return moves;
+}
+
+void Sokoban_Board::perform_move(move the_move, bool reverse)
+{
+    //Remove box from board_boxes.
+    this->board_boxes.erase(the_move.second);
+    //Perform move
+    Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
+    //Insert the new box in board_boxes.
+    this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(the_move.second, the_move.second));
+
+}
+
+int32_t Sokoban_Board::get_heuristic()
+{   //Heuristic function. Very simple. Should probably be improved.
+    //Give an estimate of the number of remaining moves.
+    //This is calculated as the manhattan distance(sum of horisontal and vertical distance)
+    //We also check for (very simple) deadlocks. We return a negative number if a deadlock
+    //is detected.
+    int32_t h_cost = 0;
+    for(auto &box_pair : this->board_boxes)
+    {
+        auto &box = box_pair.first;
+        if(box->type == Goal_Box)
+            continue;
+        if(box->is_deadlocked())
+        {
+            std::cout << box->pos.x_pos << " " << box->pos.y_pos << std::endl;
+            return -1;
+        }
+        uint32_t min_distance = 0xFFFFFFFF;
+        for(auto &goal : this->goals)
+        {
+            if(box == goal)
+            {
+                min_distance = 0;
+                break;
+            }
+            uint32_t dist = abs(box->pos.x_pos - goal->pos.x_pos) +
+                abs(box->pos.y_pos - goal->pos.y_pos);
+            min_distance = std::min(min_distance, dist);
+        }
+        h_cost += min_distance;
+    }
+    return h_cost;
 }
