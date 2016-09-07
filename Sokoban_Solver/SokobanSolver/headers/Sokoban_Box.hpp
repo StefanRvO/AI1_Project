@@ -73,6 +73,7 @@ class Sokoban_Box
         static void change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_box);
         bool is_moveable(Move_Direction dir);
         bool is_deadlocked();
+        Sokoban_Box *get_neighbour(Move_Direction dir);
 
         Sokoban_Box(Box_Type _type, Position _pos);
         Sokoban_Box() {};

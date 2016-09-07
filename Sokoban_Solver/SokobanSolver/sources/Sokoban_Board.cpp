@@ -245,13 +245,27 @@ std::vector<move> Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sok
 
 void Sokoban_Board::perform_move(move the_move, bool reverse)
 {
-    //Remove box from board_boxes.
-    this->board_boxes.erase(the_move.second);
-    //Perform move
-    Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
-    //Insert the new box in board_boxes.
-    this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(the_move.second, the_move.second));
+    Sokoban_Box *start_pos  = nullptr;
+    Sokoban_Box *end_pos    = nullptr;
 
+    if(reverse == false)
+    {
+        start_pos = the_move.second;
+        Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
+        end_pos = the_move.second;
+    }
+    else
+    {
+        //Perform move
+        start_pos = the_move.second->get_neighbour(the_move.first);
+        end_pos = the_move.second;
+        Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
+    }
+
+    auto start_size = this->board_boxes.size();
+    this->board_boxes.erase(start_pos);
+    this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
+    assert(start_size == this->board_boxes.size());
 }
 
 int32_t Sokoban_Board::get_heuristic()
@@ -264,18 +278,25 @@ int32_t Sokoban_Board::get_heuristic()
     for(auto &box_pair : this->board_boxes)
     {
         auto &box = box_pair.first;
+//        std::cout << "BOX: " << box->pos.x_pos << " " <<
+//            box->pos.y_pos << std::endl <<std::endl;
+
         if(box->type == Goal_Box)
             continue;
         if(box->is_deadlocked())
         {
-            std::cout << box->pos.x_pos << " " << box->pos.y_pos << std::endl;
+        //    std::cout << box->pos.x_pos << " " << box->pos.y_pos << std::endl;
             return -1;
         }
-        uint32_t min_distance = 0xFFFFFFFF;
+        uint32_t min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
         {
+//            std::cout << "GOAL: " << goal->pos.x_pos << " " <<
+//                goal->pos.y_pos << std::endl <<std::endl;
+
             if(box == goal)
             {
+                std::cout << "!!" << std::endl;
                 min_distance = 0;
                 break;
             }

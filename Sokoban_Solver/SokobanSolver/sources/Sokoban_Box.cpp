@@ -62,62 +62,36 @@ void Sokoban_Box::change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_bo
 void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_Direction dir, bool reverse)
 {   Sokoban_Box *new_pos = nullptr;
     Sokoban_Box *new_player_pos = nullptr;
-    if(reverse == true)
+    switch(dir)
     {
-        switch(dir)
-        {
-            case Move_Direction::up:
-                new_pos = move_box;
-                move_box = move_box->nb_up;
-                new_player_pos = new_pos->nb_down;
-                break;
-            case Move_Direction::down:
-                new_pos = move_box;
-                move_box = move_box->nb_down;
-                new_player_pos = new_pos->nb_up;
-                break;
-            case Move_Direction::left:
-                new_pos = move_box;
-                move_box = move_box->nb_left;
-                new_player_pos = new_pos->nb_right;
-                break;
-            case Move_Direction::right:
-                new_pos = move_box;
-                move_box = move_box->nb_right;
-                new_player_pos = new_pos->nb_left;
-                break;
-            default:
-                assert(false);
-        }
-    }
-    else
-    {
-        switch(dir)
-        {
-            case Move_Direction::up:
-                new_pos = move_box->nb_up;
-                new_player_pos = move_box->nb_down;
-                break;
-            case Move_Direction::down:
-                new_pos = move_box->nb_down;
-                new_player_pos = move_box->nb_up;
-                break;
-            case Move_Direction::left:
-                new_pos = move_box->nb_left;
-                new_player_pos = move_box->nb_right;
-                break;
-            case Move_Direction::right:
-                new_pos = move_box->nb_right;
-                new_player_pos = move_box->nb_left;
-                break;
-            default:
-                assert(false);
-        }
+        case Move_Direction::up:
+            new_pos = move_box->nb_up;
+            new_player_pos = move_box->nb_down;
+            break;
+        case Move_Direction::down:
+            new_pos = move_box->nb_down;
+            new_player_pos = move_box->nb_up;
+            break;
+        case Move_Direction::left:
+            new_pos = move_box->nb_left;
+            new_player_pos = move_box->nb_right;
+            break;
+        case Move_Direction::right:
+            new_pos = move_box->nb_right;
+            new_player_pos = move_box->nb_left;
+            break;
+        default:
+            assert(false);
     }
     Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
-    Sokoban_Box::change_types_in_move(*move_box, *new_pos);
-    move_box = new_pos;
+    if(reverse)
+        Sokoban_Box::change_types_in_move(*new_pos, *move_box);
+    else
+        Sokoban_Box::change_types_in_move(*move_box, *new_pos);
+
+    if(!reverse) move_box = new_pos;
     player_box = new_player_pos;
+
 }
 
 
@@ -159,6 +133,8 @@ bool Sokoban_Box::is_deadlocked()
 {
     //the box is deadlocked if to adjecent neighbours are
     //Walls
+    if(this->type == Goal_Box) return false;
+
     bool last_wall = false;
     if(this->nb_up->type == Wall)
         last_wall = true;
@@ -184,4 +160,17 @@ bool Sokoban_Box::is_deadlocked()
         if(last_wall) return true;
 
     return false;
+}
+
+Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
+{   //Return the pointer to the neighbour in the given direction
+    switch(dir)
+    {
+        case up: return this->nb_up;
+        case down: return this->nb_down;
+        case left: return this->nb_left;
+        case right: return this->nb_right;
+        default:
+            assert(false);
+    }
 }

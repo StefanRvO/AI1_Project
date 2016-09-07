@@ -11,4 +11,7 @@ class Solver
         bool solve();
     private:
         Sokoban_Board *board = nullptr;
+        int32_t IDA_star_solve();
+        int32_t IDA_search(uint32_t g, int32_t bound);
+
 };
