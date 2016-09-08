@@ -4,6 +4,13 @@
 #include <iostream>
 #include <stdexcept>
 
+uint8_t get_digits(uint32_t x)
+{
+    uint8_t len = 1;
+    while( x/=10 ) len++;
+    return len;
+}
+
 Box_Type Sokoban_Board::parse_char(char chr)
 { //Parse a single character from the board string.
   //Return a Box_Type
@@ -123,17 +130,39 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->populate_neighbours();
 }
 
-std::string Sokoban_Board::get_board_str()
+std::string Sokoban_Board::get_board_str(bool with_coords)
 {
     std::string board_str = "";
     for(uint32_t y = 0; y < this->size_y; y++)
     {
-        std::string row_str = "";
+
+        std::string row_str;
+        if(with_coords)
+        {
+            row_str = std::to_string(y);
+            while(row_str.size() < (uint32_t)get_digits(this->size_y) + 1) row_str += " ";
+        }
         for(uint32_t x = 0; x < this->size_x; x++)
         {
             row_str += Sokoban_Board::get_box_char(this->board[x][y].type);
         }
         board_str += row_str;
+        board_str += "\n";
+    }
+    if(with_coords)
+    {
+        board_str += "\n";
+        for(uint32_t i = 0; i < (uint32_t)get_digits(this->size_y) + 1; i++) board_str += " ";
+        for(uint32_t i = 0; i < this->size_x; i++)
+            board_str += std::to_string(i % 10);
+        board_str += "\n";
+        if(this->size_x > 10)
+        {
+            for(uint32_t i = 0; i < (uint32_t)get_digits(this->size_y) + 1; i++) board_str += " ";
+            for(uint32_t i = 0; i < this->size_x; i++)
+                if(i%10)  board_str += " ";
+                else      board_str += std::to_string(i/10);
+        }
         board_str += "\n";
     }
     return board_str;
@@ -174,14 +203,10 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     std::vector<move> moves;
     moves.reserve(10);
 
-    auto moves_up =     Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields);
-    auto moves_down =   Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields);
-    auto moves_left =   Sokoban_Board::find_possible_moves_rec(Move_Direction::left, this->player_box->nb_left, searched_fields);
-    auto moves_right =  Sokoban_Board::find_possible_moves_rec(Move_Direction::right, this->player_box->nb_right, searched_fields);
-    moves.insert( moves.end(), std::make_move_iterator(moves_up.begin()), std::make_move_iterator(moves_up.end()));
-    moves.insert( moves.end(), std::make_move_iterator(moves_down.begin()), std::make_move_iterator(moves_down.end()));
-    moves.insert( moves.end(), std::make_move_iterator(moves_left.begin()), std::make_move_iterator(moves_left.end()));
-    moves.insert( moves.end(), std::make_move_iterator(moves_right.begin()), std::make_move_iterator(moves_right.end()));
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields, moves);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields, moves);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::left, this->player_box->nb_left, searched_fields, moves);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::right, this->player_box->nb_right, searched_fields, moves);
 
     //Clear searched types
     for(auto &box : searched_fields)
@@ -192,9 +217,8 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     return moves;
 }
 
-std::vector<move> Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box, std::vector<Sokoban_Box *> &searched_fields)
+void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box, std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves)
 {
-    std::vector<move> moves;
     Box_Type &this_type = search_box->type;
     switch(this_type)
     {
@@ -203,7 +227,7 @@ std::vector<move> Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sok
         case Wall:
         case Player:
         case Player_On_Goal:
-            return moves;
+            return;
         case Free:
             search_box->type = Free_Searched;
             searched_fields.push_back(search_box);
@@ -215,32 +239,19 @@ std::vector<move> Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sok
         case Box:
         case Goal_Box:
             if(search_box->is_moveable(dir)) moves.push_back(move(dir, search_box));
-            return moves;
+            return;
         default:
             assert(false);
     }
     //Search around search_box, but not in the direction we came from.
     if(dir != down)
-    {
-        auto moves_up = Sokoban_Board::find_possible_moves_rec(Move_Direction::up, search_box->nb_up, searched_fields);
-        moves.insert( moves.end(), std::make_move_iterator(moves_up.begin()), std::make_move_iterator(moves_up.end()));
-    }
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::up, search_box->nb_up, searched_fields, moves);
     if(dir != up)
-    {
-        auto moves_down =   Sokoban_Board::find_possible_moves_rec(Move_Direction::down, search_box->nb_down, searched_fields);
-        moves.insert( moves.end(), std::make_move_iterator(moves_down.begin()), std::make_move_iterator(moves_down.end()));
-    }
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::down, search_box->nb_down, searched_fields, moves);
     if(dir != right)
-    {
-        auto moves_left =  Sokoban_Board::find_possible_moves_rec(Move_Direction::left, search_box->nb_left, searched_fields);
-        moves.insert( moves.end(), std::make_move_iterator(moves_left.begin()), std::make_move_iterator(moves_left.end()));
-    }
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::left, search_box->nb_left, searched_fields, moves);
     if(dir != left)
-    {
-        auto moves_right =  Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields);
-        moves.insert( moves.end(), std::make_move_iterator(moves_right.begin()), std::make_move_iterator(moves_right.end()));
-    }
-    return moves;
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields, moves);
 }
 
 void Sokoban_Board::perform_move(move the_move, bool reverse)

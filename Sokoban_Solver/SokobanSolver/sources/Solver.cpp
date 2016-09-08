@@ -45,7 +45,7 @@ int32_t Solver::IDA_search(uint32_t g, int32_t bound)
     int32_t f = g + h;
     //std::cout << " H: " << h << ", G: " << g << std::endl;
     if(f > bound) return f;
-    if(f == (int32_t)g) return 0;
+    if(h == 0) return 0;
     int32_t min = 0xFFFFFF;
     for (auto &the_move : this->board->find_possible_moves())
     {

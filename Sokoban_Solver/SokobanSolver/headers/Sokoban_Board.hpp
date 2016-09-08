@@ -51,13 +51,13 @@ class Sokoban_Board
         Sokoban_Board(std::string &board_str);
         ~Sokoban_Board();
         //Return the board in the format explained above.
-        std::string get_board_str();
+        std::string get_board_str(bool with_coords = false);
         void populate_neighbours();
         std::vector<move> find_possible_moves();
 
 
-        static std::vector<move> find_possible_moves_rec(Move_Direction dir,
-            Sokoban_Box *search_box, std::vector<Sokoban_Box *> &searched_fields);
+        static void  find_possible_moves_rec(Move_Direction dir,
+            Sokoban_Box *search_box, std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
         void perform_move(move the_move, bool reverse = false);
         int32_t get_heuristic();
