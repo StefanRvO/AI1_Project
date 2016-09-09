@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 #include <utility>
-
+#include <ostream>
 
 //A box defining a field on the Sokoban board
 struct Position
@@ -22,6 +22,9 @@ enum Box_Type
     Free, //Free space. (Space)/-/_
     Free_Searched, //Free space, but searched. Used when finding moves.
     Goal_Searched, //Goal, but searched. Used when finding moves.
+    DeadLock_Zone_Free, //Blocks which, if a box would be placed there, it would cause a deadlock.
+    DeadLock_Zone_Free_Searched,
+    DeadLock_Zone_Player,
 };
 
 enum Move_Direction
@@ -73,6 +76,12 @@ class Sokoban_Box
         static void change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_box);
         bool is_moveable(Move_Direction dir);
         bool is_deadlocked();
+        bool is_pullable(Move_Direction dir);
+        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Box& box)
+        {
+            os << "(" << box.pos.x_pos << "," << box.pos.y_pos << ")";
+            return os;
+        }
         Sokoban_Box *get_neighbour(Move_Direction dir);
 
         Sokoban_Box(Box_Type _type, Position _pos);

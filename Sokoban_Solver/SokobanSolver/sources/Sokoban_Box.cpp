@@ -43,12 +43,21 @@ void Sokoban_Box::change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_bo
             old_box.change_type(Free);
             if(new_box.type == Goal) new_box.change_type(Player_On_Goal);
             else if(new_box.type == Free) new_box.change_type(Player);
+            else if(new_box.type == DeadLock_Zone_Free) new_box.change_type(DeadLock_Zone_Player);
             else assert(false);
             break;
         case Player_On_Goal:
             old_box.change_type(Goal);
             if(new_box.type == Goal) new_box.change_type(Player_On_Goal);
             else if(new_box.type == Free) new_box.change_type(Player);
+            else if(new_box.type == DeadLock_Zone_Free) new_box.change_type(DeadLock_Zone_Player);
+            else assert(false);
+            break;
+        case DeadLock_Zone_Player:
+            old_box.change_type(DeadLock_Zone_Free);
+            if(new_box.type == Goal) new_box.change_type(Player_On_Goal);
+            else if(new_box.type == Free) new_box.change_type(Player);
+            else if(new_box.type == DeadLock_Zone_Free) new_box.change_type(DeadLock_Zone_Player);
             else assert(false);
             break;
         default:
@@ -83,7 +92,8 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
         default:
             assert(false);
     }
-    Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
+    if(player_box != nullptr and player_box != new_player_pos)
+        Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
     if(reverse)
         Sokoban_Box::change_types_in_move(*new_pos, *move_box);
     else
@@ -122,6 +132,9 @@ bool Sokoban_Box::is_moveable(Move_Direction dir)
         case Box:
         case Goal_Box:
         case Wall:
+        case DeadLock_Zone_Free:
+        case DeadLock_Zone_Player:
+        case DeadLock_Zone_Free_Searched:
             return false;
         default:
             return true;
@@ -133,32 +146,7 @@ bool Sokoban_Box::is_deadlocked()
 {
     //the box is deadlocked if to adjecent neighbours are
     //Walls
-    if(this->type == Goal_Box) return false;
-
-    bool last_wall = false;
-    if(this->nb_up->type == Wall)
-        last_wall = true;
-    if(this->nb_left->type == Wall)
-    {
-        if(last_wall) return true;
-        else last_wall = true;
-    }
-    else last_wall = false;
-    if(this->nb_down->type == Wall)
-    {
-        if(last_wall) return true;
-        else last_wall = true;
-    }
-    else last_wall = false;
-    if(this->nb_right->type == Wall)
-    {
-        if(last_wall) return true;
-        else last_wall = true;
-    }
-    else last_wall = false;
-    if(this->nb_up->type == Wall)
-        if(last_wall) return true;
-
+    if(this->type == DeadLock_Zone_Free or this->type == DeadLock_Zone_Player) return true;
     return false;
 }
 
@@ -172,5 +160,23 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
         case right: return this->nb_right;
         default:
             assert(false);
+    }
+}
+
+bool Sokoban_Box::is_pullable(Move_Direction dir)
+{
+    switch(this->get_neighbour(dir)->type)
+    {
+        case Box: case Goal_Box: case Wall:
+            return false;
+        default:
+            break;
+    }
+    switch(this->get_neighbour(dir)->get_neighbour(dir)->type)
+    {
+        case Box: case Goal_Box: case Wall:
+            return false;
+        default:
+            return true;
     }
 }

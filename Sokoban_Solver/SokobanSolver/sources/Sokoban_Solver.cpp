@@ -41,10 +41,12 @@ int main(int argc, char **argv)
     {
         //Create the board.
         Sokoban_Board board(board_str);
+        std::cout << board.get_board_str(true);
+
         //Create the solver
         Solver SSolver(&board);
         //Solve
-        //SSolver.solve();
+        SSolver.solve();
 
         std::cout << board.get_board_str(true);
     }

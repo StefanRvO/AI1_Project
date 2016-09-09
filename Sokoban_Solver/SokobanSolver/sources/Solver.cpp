@@ -1,5 +1,7 @@
 #include "Solver.hpp"
 #include <iostream>
+#include "DeadLockDetector.hpp"
+
 Solver::Solver(Sokoban_Board *_board)
 {
     this->board = _board;
@@ -7,17 +9,19 @@ Solver::Solver(Sokoban_Board *_board)
 
 bool Solver::solve()
 {
-    //std::cout << this->board->goals.size() << std::endl;
-    //auto moves = this->board->find_possible_moves();
-    //return false;
-    /*for(uint32_t i = 0; i < 1000000; i++)
-    {
-        this->board->perform_move(moves[0]);
-        std::cout << this->board->get_board_str() << std::endl;
-        this->board->perform_move(moves[0], true);
-        std::cout << this->board->get_board_str() << std::endl;
 
-    }*/
+    auto dead_fields = DeadLockDetector::get_static_deadlock_boxes(*this->board);
+    for(auto &field : dead_fields)
+    {
+        switch(field->type)
+        {
+            case Free: field->change_type(DeadLock_Zone_Free);
+                break;
+            case Player: field->change_type(DeadLock_Zone_Player);
+                break;
+            default: return false;
+        }
+    }
 
     uint32_t solve_result = this->IDA_star_solve();
     if(solve_result == 0xFFFFFFFF) return false;

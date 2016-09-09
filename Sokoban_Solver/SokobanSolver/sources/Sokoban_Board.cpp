@@ -3,7 +3,6 @@
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
-
 uint8_t get_digits(uint32_t x)
 {
     uint8_t len = 1;
@@ -38,8 +37,10 @@ char Sokoban_Board::get_box_char(Box_Type type)
         case Goal_Box:        return '*';
         case Goal:            return '.';
         case Box:             return '$';
+        case DeadLock_Zone_Player:
         case Player:          return '@';
         case Player_On_Goal:  return '+';
+        case DeadLock_Zone_Free:
         case Free:            return ' ';
         default:
         throw std::runtime_error(std::string("Trying to convert invalid type to char.\nThis should not happen!"));
@@ -184,7 +185,7 @@ void Sokoban_Board::populate_neighbours()
             if(x + 1 < this->size_x) right = &this->board[x + 1][y];
             this->board[x][y].set_neighbours(up, down, left, right);
             //Set player box if this is the one.
-            if(this->board[x][y].type == Player or this->board[x][y].type == Player_On_Goal)
+            if(this->board[x][y].type == Player or this->board[x][y].type == Player_On_Goal or this->board[x][y].type == DeadLock_Zone_Player)
                 this->player_box = &this->board[x][y];
             else if(this->board[x][y].type == Box or this->board[x][y].type == Goal_Box)
                 this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(&this->board[x][y], &this->board[x][y]));
@@ -202,7 +203,6 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     //Search all around the player
     std::vector<move> moves;
     moves.reserve(10);
-
     Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields, moves);
     Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields, moves);
     Sokoban_Board::find_possible_moves_rec(Move_Direction::left, this->player_box->nb_left, searched_fields, moves);
@@ -211,8 +211,9 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     //Clear searched types
     for(auto &box : searched_fields)
     {
-        if(box->type == Free_Searched)       box->type = Free;
-        else if(box->type == Goal_Searched)  box->type = Goal;
+        if(box->type == Free_Searched)                      box->type = Free;
+        else if(box->type == Goal_Searched)                 box->type = Goal;
+        else if(box->type == DeadLock_Zone_Free_Searched)   box->type = DeadLock_Zone_Free;
     }
     return moves;
 }
@@ -224,12 +225,18 @@ void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *sea
     {
         case Free_Searched:
         case Goal_Searched:
+        case DeadLock_Zone_Free_Searched:
         case Wall:
         case Player:
+        case DeadLock_Zone_Player:
         case Player_On_Goal:
             return;
         case Free:
             search_box->type = Free_Searched;
+            searched_fields.push_back(search_box);
+            break;
+        case DeadLock_Zone_Free:
+            search_box->type = DeadLock_Zone_Free_Searched;
             searched_fields.push_back(search_box);
             break;
         case Goal:
@@ -241,6 +248,7 @@ void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *sea
             if(search_box->is_moveable(dir)) moves.push_back(move(dir, search_box));
             return;
         default:
+            std::cout << this_type << std::endl;
             assert(false);
     }
     //Search around search_box, but not in the direction we came from.
