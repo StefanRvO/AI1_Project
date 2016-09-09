@@ -161,7 +161,69 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
         default:
             assert(false);
     }
+    return this;
 }
+
+bool Sokoban_Box::is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir)
+{
+    if(this->_deadlocked == rand_num) return true;
+    if(this->_deadlocked == -rand_num) return false;
+    this->_deadlocked = 0; //To detect cycles.
+    bool deadlocked = true;
+    for(uint8_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
+    {
+        const Move_Direction &dir = (Move_Direction)_dir;
+        if(no_check_dir and *no_check_dir == dir) continue;
+        switch (this->get_neighbour(dir)->type)
+        {
+            case Wall: case DeadLock_Zone_Free:
+            case DeadLock_Zone_Player:
+                continue;
+            case Box: case Goal_Box:
+                if(this->get_neighbour(dir)->_deadlocked == 0) continue;
+                if(this->get_neighbour(dir)->is_freeze_deadlocked(rand_num, &dir))
+                    continue;
+                //Intended no break here
+            case Goal: case Player: case Player_On_Goal:
+            case Free:
+                deadlocked = false;
+                break;
+            default:
+                assert(false);
+                break;
+        }
+    }
+    if(deadlocked)
+    {
+        if(no_check_dir == nullptr) //Only propegate the deadlock detection after it have been determined
+            this->_deadlocked = rand_num;
+        return true;
+    }
+    else
+    {
+        if(no_check_dir == nullptr)
+            this->_deadlocked = -rand_num;
+        return false;
+    }
+}
+
+void Sokoban_Box::propegate_deadlock(int64_t rand_num, const Move_Direction *no_check_dir)
+{
+    if(this->_deadlocked == rand_num or this->_deadlocked == -rand_num) return;
+    for(uint8_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
+    {
+        const Move_Direction &dir = (Move_Direction)_dir;
+        if(no_check_dir and *no_check_dir == dir) continue;
+        switch (this->get_neighbour(dir)->type)
+        {
+            case Box: case Goal_Box:
+                this->propegate_deadlock(rand_num, &dir);
+            default:
+                break;
+        }
+    }
+}
+
 
 bool Sokoban_Box::is_pullable(Move_Direction dir)
 {

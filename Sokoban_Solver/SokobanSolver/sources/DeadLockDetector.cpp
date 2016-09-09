@@ -22,9 +22,9 @@ std::vector<Sokoban_Box *> DeadLockDetector::get_static_deadlock_boxes(Sokoban_B
         auto goal = &tmp_board.board[_goal->pos.x_pos][_goal->pos.y_pos];
         visited.push_back(*goal);
         goal->change_type(Goal_Searched);
-        for(uint32_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
+        for(uint8_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
         {
-            Move_Direction dir = (Move_Direction)_dir;
+            const Move_Direction &dir = (Move_Direction)_dir;
             if(goal->is_pullable(dir))
                 bipartite_search_rec(goal->get_neighbour(dir), visited);
         }
@@ -50,9 +50,9 @@ void DeadLockDetector::bipartite_search_rec(Sokoban_Box *box, std::vector<Sokoba
 {
     visited.push_back(*box);
     box->change_type(Free_Searched);
-    for(uint32_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
+    for(uint8_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
     {
-        Move_Direction dir = (Move_Direction)_dir;
+        const Move_Direction &dir = (Move_Direction)_dir;
         if(box->is_pullable(dir) and box->get_neighbour(dir)->type != Free_Searched
             and box->get_neighbour(dir)->type != Goal_Searched)
             bipartite_search_rec(box->get_neighbour(dir), visited);

@@ -11,7 +11,7 @@ struct Position
     uint32_t y_pos;
 };
 
-enum Box_Type
+enum Box_Type : uint8_t
 {
     Box, //A box which is not yet placed upon a goal $
     Goal_Box, //A box placed upon a goal *
@@ -44,6 +44,10 @@ class Sokoban_Box
 {
     private:
     public:
+        int64_t _deadlocked = 0; //s64 because we parse a random number into the, and it should be unreasonable to get the same two times in a row.
+        //negative means not deadlocked
+
+
         //This defines the box's neighbours.
         Sokoban_Box *nb_up = nullptr;
         Sokoban_Box *nb_down = nullptr;
@@ -77,6 +81,8 @@ class Sokoban_Box
         bool is_moveable(Move_Direction dir);
         bool is_deadlocked();
         bool is_pullable(Move_Direction dir);
+        bool is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
+        void propegate_deadlock(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
         friend std::ostream& operator<<(std::ostream& os, const Sokoban_Box& box)
         {
             os << "(" << box.pos.x_pos << "," << box.pos.y_pos << ")";

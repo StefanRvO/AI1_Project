@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
+#include <random>
 uint8_t get_digits(uint32_t x)
 {
     uint8_t len = 1;
@@ -90,6 +91,7 @@ Sokoban_Board::~Sokoban_Board()
 
 //Copy constructor
 Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
+: rand_gen(_board.rand_gen), gen(_board.gen)
 {
     this->board = _board.board;
     this->size_x = _board.size_x;
@@ -99,6 +101,8 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
 }
 
 Sokoban_Board::Sokoban_Board(std::string &board_str)
+: rand_gen(1, 0x0FFFFFFFFFFFFFFF),  gen(this->rd())
+
 {
     //Split into the rows.
     std::vector<std::string> rows;
@@ -280,8 +284,9 @@ void Sokoban_Board::perform_move(move the_move, bool reverse)
         end_pos = the_move.second;
         Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
     }
-
+    #ifndef NDEBUG
     auto start_size = this->board_boxes.size();
+    #endif
     this->board_boxes.erase(start_pos);
     this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
     assert(start_size == this->board_boxes.size());
@@ -293,6 +298,8 @@ int32_t Sokoban_Board::get_heuristic()
     //This is calculated as the manhattan distance(sum of horisontal and vertical distance)
     //We also check for (very simple) deadlocks. We return a negative number if a deadlock
     //is detected.
+    //Generate random number for deadlock detection
+    int64_t rand_num = rand_gen(gen);
     int32_t h_cost = 0;
     for(auto &box_pair : this->board_boxes)
     {
@@ -302,11 +309,14 @@ int32_t Sokoban_Board::get_heuristic()
 
         if(box->type == Goal_Box)
             continue;
-        if(box->is_deadlocked())
+        if(box->is_freeze_deadlocked(rand_num) and box->type != Goal_Box)
         {
-        //    std::cout << box->pos.x_pos << " " << box->pos.y_pos << std::endl;
+            box->propegate_deadlock(rand_num);
+        //    std::cout << this->get_board_str() << std::endl;
             return -1;
         }
+        else box->propegate_deadlock(rand_num);
+
         uint32_t min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
         {
