@@ -1,6 +1,22 @@
 #include "Sokoban_Box.hpp"
 #include <cassert>
 #include <iostream>
+
+static Move_Direction get_reverse_direction(Move_Direction dir)
+{
+    switch (dir) {
+        case up: return down;
+        case down: return up;
+        case left: return right;
+        case right: return left;
+
+    }
+    assert(false);
+    return left;
+}
+
+
+
 Sokoban_Box::Sokoban_Box(Box_Type _type, Position _pos)
 {
     this->type = _type;
@@ -164,45 +180,55 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
     return this;
 }
 
+bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2)
+{
+    auto nb_1 = this->get_neighbour(dir1);
+    auto nb_2 = this->get_neighbour(dir2);
+    auto &type1 = nb_1->type;
+    auto &type2 = nb_2->type;
+
+    if(type1 == Wall or type2 == Wall) return true;
+    if( (type1 == DeadLock_Zone_Player or type1 == DeadLock_Zone_Free) and
+        (type2 == DeadLock_Zone_Player or type2 == DeadLock_Zone_Free))
+        return true;
+    if(type1 == Goal_Box or type1 == Box)
+        if(nb_1->is_freeze_deadlocked(rand_num, &dir1))
+            return true;
+    if(type2 == Goal_Box or type2 == Box)
+        if(nb_2->is_freeze_deadlocked(rand_num, &dir2))
+            return true;
+    return false;
+}
+
 bool Sokoban_Box::is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir)
 {
+    //std::cout << "visted: " << *this << std::endl;
     if(this->_deadlocked == rand_num) return true;
     if(this->_deadlocked == -rand_num) return false;
-    this->_deadlocked = 0; //To detect cycles.
-    bool deadlocked = true;
-    for(uint8_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
+    if(no_check_dir)
     {
-        const Move_Direction &dir = (Move_Direction)_dir;
-        if(no_check_dir and *no_check_dir == dir) continue;
-        switch (this->get_neighbour(dir)->type)
+        if(*no_check_dir == left or *no_check_dir == right)
         {
-            case Wall: case DeadLock_Zone_Free:
-            case DeadLock_Zone_Player:
-                continue;
-            case Box: case Goal_Box:
-                if(this->get_neighbour(dir)->_deadlocked == 0) continue;
-                if(this->get_neighbour(dir)->is_freeze_deadlocked(rand_num, &dir))
-                    continue;
-                //Intended no break here
-            case Goal: case Player: case Player_On_Goal:
-            case Free:
-                deadlocked = false;
-                break;
-            default:
-                assert(false);
-                break;
+            if(this->is_freeze_deadlocked_helper(rand_num, up, down))
+                return true;
+            return false;
         }
-    }
-    if(deadlocked)
-    {
-        if(no_check_dir == nullptr) //Only propegate the deadlock detection after it have been determined
-            this->_deadlocked = rand_num;
-        return true;
+        else
+        {
+            if(this->is_freeze_deadlocked_helper(rand_num, left, right))
+                return true;
+            return false;
+        }
     }
     else
     {
-        if(no_check_dir == nullptr)
-            this->_deadlocked = -rand_num;
+        if(this->is_freeze_deadlocked_helper(rand_num, up, down) and
+           this->is_freeze_deadlocked_helper(rand_num, left, right))
+        {
+              this->_deadlocked = rand_num;
+              return true;
+        }
+        this->_deadlocked = -rand_num;
         return false;
     }
 }
@@ -223,7 +249,6 @@ void Sokoban_Box::propegate_deadlock(int64_t rand_num, const Move_Direction *no_
         }
     }
 }
-
 
 bool Sokoban_Box::is_pullable(Move_Direction dir)
 {

@@ -3,7 +3,7 @@
 #include "Sokoban_Board.hpp"
 #include "Solver.hpp"
 #include <exception>
-
+#include "DeadLockDetector.hpp"
 namespace po = boost::program_options;
 
 
@@ -41,14 +41,15 @@ int main(int argc, char **argv)
     {
         //Create the board.
         Sokoban_Board board(board_str);
-        std::cout << board.get_board_str(true);
 
+    //    std::cout << board.get_board_str(true) << std::endl;
+    //    std::cout << board.get_heuristic() << std::endl;
         //Create the solver
         Solver SSolver(&board);
         //Solve
         SSolver.solve();
 
-        std::cout << board.get_board_str(true);
+        std::cout << board << std::endl;
     }
     catch(std::exception &e)
     {

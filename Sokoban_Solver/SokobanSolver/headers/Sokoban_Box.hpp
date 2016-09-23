@@ -83,6 +83,7 @@ class Sokoban_Box
         bool is_pullable(Move_Direction dir);
         bool is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
         void propegate_deadlock(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
+        bool is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2);
         friend std::ostream& operator<<(std::ostream& os, const Sokoban_Box& box)
         {
             os << "(" << box.pos.x_pos << "," << box.pos.y_pos << ")";

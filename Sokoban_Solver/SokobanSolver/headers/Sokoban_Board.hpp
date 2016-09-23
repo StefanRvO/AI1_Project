@@ -56,7 +56,7 @@ class Sokoban_Board
         Sokoban_Board(std::string &board_str);
         ~Sokoban_Board();
         //Return the board in the format explained above.
-        std::string get_board_str(bool with_coords = false);
+        std::string get_board_str(bool with_coords = false) const;
         void populate_neighbours();
         std::vector<move> find_possible_moves();
 
@@ -66,7 +66,11 @@ class Sokoban_Board
 
         void perform_move(move the_move, bool reverse = false);
         int32_t get_heuristic();
-
+        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &board)
+        {
+            os << board.get_board_str();
+            return os;
+        }
         //Static functions
         static Box_Type parse_char(char chr);
         static char get_box_char(Box_Type type);

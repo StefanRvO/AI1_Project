@@ -135,7 +135,7 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->populate_neighbours();
 }
 
-std::string Sokoban_Board::get_board_str(bool with_coords)
+std::string Sokoban_Board::get_board_str(bool with_coords) const
 {
     std::string board_str = "";
     for(uint32_t y = 0; y < this->size_y; y++)
@@ -299,24 +299,18 @@ int32_t Sokoban_Board::get_heuristic()
     //We also check for (very simple) deadlocks. We return a negative number if a deadlock
     //is detected.
     //Generate random number for deadlock detection
+    //static uint32_t calls = 0;
+    //if(calls++ % 1000 == 0) std::cout << calls << std::endl;
+
     int64_t rand_num = rand_gen(gen);
     int32_t h_cost = 0;
     for(auto &box_pair : this->board_boxes)
     {
         auto &box = box_pair.first;
-//        std::cout << "BOX: " << box->pos.x_pos << " " <<
-//            box->pos.y_pos << std::endl <<std::endl;
-
-        if(box->type == Goal_Box)
-            continue;
-        if(box->is_freeze_deadlocked(rand_num) and box->type != Goal_Box)
-        {
-            box->propegate_deadlock(rand_num);
-        //    std::cout << this->get_board_str() << std::endl;
-            return -1;
-        }
-        else box->propegate_deadlock(rand_num);
-
+        if(box->is_freeze_deadlocked(rand_num))
+            if(box->type != Goal_Box)
+                return -1;
+        if(box->type == Goal_Box) continue;
         uint32_t min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
         {
