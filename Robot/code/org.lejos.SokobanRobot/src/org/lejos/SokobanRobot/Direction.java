@@ -6,4 +6,5 @@ public enum Direction
     down,
     left,
     right,
+    none,
 };
