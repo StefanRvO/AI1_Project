@@ -30,7 +30,16 @@ public class DriveForward  implements Behavior {
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed(800);
-        MotorR.setSpeed(800);
+        MotorL.setSpeed((int)MotorL.getMaxSpeed());
+        MotorR.setSpeed((int)MotorL.getMaxSpeed());
+        try
+        {
+            Thread.sleep(5);
+        }
+        catch(InterruptedException e)
+        {
+
+        }
+
     }
 }

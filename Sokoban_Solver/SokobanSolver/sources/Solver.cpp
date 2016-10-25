@@ -2,6 +2,12 @@
 #include <iostream>
 #include "DeadLockDetector.hpp"
 
+std::ostream& operator<<(std::ostream& os, const move& the_move)
+{
+    os << "Move: (Dir:" << the_move.first << ", "<< *the_move.second << ")";
+    return os;
+}
+
 Solver::Solver(Sokoban_Board *_board)
 {
     this->board = _board;
@@ -22,7 +28,12 @@ bool Solver::solve()
             default: return false;
         }
     }
-
+    /*for (auto &the_move : this->board->find_possible_moves())
+    {
+        std::cout << the_move << std::endl;
+    }
+    std::cout << this->board->get_board_str(true);
+    return false;*/
     int32_t solve_result = this->IDA_star_solve();
     if(solve_result < 0) return false;
     std::cout << "Solved in " << solve_result << " steps." << std::endl;
@@ -46,6 +57,7 @@ int32_t Solver::IDA_search(uint32_t g, int32_t bound)
 {
     //std::cout << this->board->get_board_str() << std::endl;
     int32_t h =  this->board->get_heuristic();
+
     int32_t f = g + h;
     //std::cout << " H: " << h << ", G: " << g << std::endl;
     if(f > bound) return f;
@@ -56,7 +68,11 @@ int32_t Solver::IDA_search(uint32_t g, int32_t bound)
     {
         this->board->perform_move(the_move);
         int32_t t = this->IDA_search( g + 1, bound);
-        if(t == 0) return 0;
+        if(t == 0)
+        {
+            std::cout << the_move << std::endl;
+            return 0;
+        }
         this->board->perform_move(the_move, true);
         if(t < 0) continue;
         if(t < min) min = t;

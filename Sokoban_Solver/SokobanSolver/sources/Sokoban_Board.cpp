@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <random>
+#include <cstdint>
 uint8_t get_digits(uint32_t x)
 {
     uint8_t len = 1;
@@ -268,6 +269,9 @@ void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *sea
 
 void Sokoban_Board::perform_move(move the_move, bool reverse)
 {
+    /*static uint64_t lol = 0;
+    lol++;
+    if(lol % 10000 == 0) std::cout << lol << std::endl;*/
     Sokoban_Box *start_pos  = nullptr;
     Sokoban_Box *end_pos    = nullptr;
 

@@ -21,8 +21,9 @@ public class SokobanRobot {
         Behavior ajust_right = new AdjustRight();
         Behavior cross_detector = CrossSectionDetector.getInstance();
         Behavior decision_maker = new DecisionMaker();
-        Behavior turner = new Turn();
-        Behavior [] b_array = {b1_drive, ajust_left, ajust_right, decision_maker, cross_detector, turner};
+        Behavior turner = Turn.getInstance();
+        //BlueToothCom com = new BlueToothCom();
+        Behavior [] b_array = {b1_drive, ajust_left, ajust_right, cross_detector, turner, decision_maker};
         Arbitrator arby = new Arbitrator(b_array);
         arby.start();
     /*    while (true)

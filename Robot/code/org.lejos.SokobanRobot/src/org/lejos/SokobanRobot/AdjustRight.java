@@ -30,10 +30,19 @@ public class AdjustRight  implements Behavior {
         System.out.print(linelight_left.readValue());
         System.out.print(" R: ");
         System.out.println(linelight_right.readValue());*/
+        //System.out.println("R");
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed(800);
-        MotorR.setSpeed(700);
+        MotorL.setSpeed((int)MotorL.getMaxSpeed());
+        MotorR.setSpeed((int)(MotorL.getMaxSpeed() * 0.9));
+        try
+        {
+            Thread.sleep(5);
+        }
+        catch(InterruptedException e)
+        {
+
+        }
     }
 }
