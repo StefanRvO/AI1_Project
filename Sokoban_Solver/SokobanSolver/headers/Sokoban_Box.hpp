@@ -97,4 +97,6 @@ class Sokoban_Box
 
         Sokoban_Box(Box_Type _type, Position _pos);
         Sokoban_Box() {};
+        bool is_solid() const;
+
 };

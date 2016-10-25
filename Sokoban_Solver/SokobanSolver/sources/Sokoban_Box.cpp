@@ -280,3 +280,15 @@ bool Sokoban_Box::is_pullable(Move_Direction dir)
             return true;
     }
 }
+bool Sokoban_Box::is_solid() const
+{
+    switch(this->type)
+    {
+        case Box:
+        case Goal_Box:
+        case Wall:
+            return true;
+        default:
+            return false;
+    }
+}

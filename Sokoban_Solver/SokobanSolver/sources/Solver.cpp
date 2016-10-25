@@ -61,10 +61,8 @@ int32_t Solver::IDA_star_solve()
 int32_t Solver::IDA_search(uint32_t g, int32_t bound)
 {
     //std::cout << this->board->get_board_str() << std::endl;
-    Sokoban_Box *upper_left = this->board->player_box;
-    auto moves = this->board->find_possible_moves(upper_left);
     int32_t h = 0;
-    if(ttable.check_table(*this->board, upper_left->pos, g, &h) == false)
+    if(ttable.check_table(*this->board, this->board->upper_left_reachable->pos, g, &h) == false)
     {
         //std::cout << h << "\tFalse!" << std::endl;
         return -1;
@@ -78,7 +76,7 @@ int32_t Solver::IDA_search(uint32_t g, int32_t bound)
     if(h == 0) return 0;
     if(h == -1) return -1;
     int32_t min = 0xFFFFFF;
-    for (auto &the_move : moves)
+    for (auto &the_move : this->board->find_possible_moves())
     {
         this->board->perform_move(the_move);
         int32_t t = this->IDA_search( g + 1, bound);
