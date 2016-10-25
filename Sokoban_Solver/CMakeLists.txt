@@ -16,6 +16,7 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 SET( CMAKE_CXX_FLAGS  "	${CMAKE_CXX_FLAGS}	\
             		-Wno-error=unused-function  \
+                    -Wno-error=unused-variable  \
 			-Ofast			\
 			-std=c++14 		\
 		 	-Wall 			\

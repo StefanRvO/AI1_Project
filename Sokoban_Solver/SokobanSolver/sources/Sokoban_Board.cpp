@@ -39,10 +39,10 @@ char Sokoban_Board::get_box_char(Box_Type type)
         case Goal_Box:        return '*';
         case Goal:            return '.';
         case Box:             return '$';
-        case DeadLock_Zone_Player: //return '%';
+        case DeadLock_Zone_Player: return '%';
         case Player:          return '@';
         case Player_On_Goal:  return '+';
-        case DeadLock_Zone_Free:   //return '&';
+        case DeadLock_Zone_Free:   return '&';
         case Free:            return ' ';
         default:
         throw std::runtime_error(std::string("Trying to convert invalid type to char.\nThis should not happen! Type was" + std::to_string((int)type)));
@@ -219,24 +219,22 @@ void Sokoban_Board::populate_neighbours()
 
 
 std::vector<move> Sokoban_Board::find_possible_moves()
-{   //Recursive move finder algorithm. This is probably pretty slow, so we should
-    //maybe try to figure out a faster way..?
-    std::vector<Sokoban_Box *> searched_fields;
-    searched_fields.reserve(this->size_x * this->size_y);
-    //Search all around the player
+{
     std::vector<move> moves;
-    moves.reserve(10);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields, moves);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields, moves);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::left, this->player_box->nb_left, searched_fields, moves);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::right, this->player_box->nb_right, searched_fields, moves);
-
-    //Clear searched types
-    for(auto &box : searched_fields)
+    moves.reserve(20);
+    for(auto &box_tmp : this->board_boxes)
     {
-        if(box->type == Free_Searched)                      box->type = Free;
-        else if(box->type == Goal_Searched)                 box->type = Goal;
-        else if(box->type == DeadLock_Zone_Free_Searched)   box->type = DeadLock_Zone_Free;
+        Sokoban_Box &box = *box_tmp.first;
+        for(uint8_t _dir = Move_Direction::up; _dir <= Move_Direction::right; _dir++)
+        {
+            const Move_Direction &dir = (Move_Direction)_dir;
+            Move_Direction reverse_dir = get_reverse_direction(dir);
+            if(box.is_moveable(dir) && this->is_reachable(box.get_neighbour(reverse_dir)))
+            {
+                auto the_move = move(dir, &box);
+                moves.push_back(the_move);
+            }
+        }
     }
     return moves;
 }
@@ -332,9 +330,9 @@ int32_t Sokoban_Board::get_heuristic()
     for(auto &box_pair : this->board_boxes)
     {
         auto &box = box_pair.first;
-        if(box->is_freeze_deadlocked(rand_num))
-            if(box->type != Goal_Box)
-                return -1;
+        //if(box->is_freeze_deadlocked(rand_num))
+        //    if(box->type != Goal_Box)
+        //        return -1;
         if(box->type == Goal_Box) continue;
         uint32_t min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
@@ -368,9 +366,12 @@ void Sokoban_Board::calc_reachable()
 {
     this->upper_left_reachable = this->player_box;
     if(++this->reachable_timestamp == 0)
+    {
         for(uint32_t x = 0; x < this->size_x; x++)
             for(uint32_t y = 0; y < this->size_y; y++)
                 this->reachable[x][y] = 0;
+        this->reachable_timestamp++;
+    }
     this->reachable[player_box->pos.x_pos][player_box->pos.y_pos] = this->reachable_timestamp;
     if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up);
     if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down);

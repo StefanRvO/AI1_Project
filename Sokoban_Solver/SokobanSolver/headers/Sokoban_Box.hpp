@@ -38,6 +38,9 @@ enum Move_Direction
     left,
     right,
 };
+Move_Direction get_reverse_direction(Move_Direction dir);
+
+
 class Sokoban_Box;
 
 

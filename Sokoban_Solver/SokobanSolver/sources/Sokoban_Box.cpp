@@ -15,7 +15,7 @@ bool operator<(const Position &pos1, const Position &pos2)
 
 }
 
-static Move_Direction get_reverse_direction(Move_Direction dir)
+Move_Direction get_reverse_direction(Move_Direction dir)
 {
     switch (dir) {
         case up: return down;
@@ -87,7 +87,11 @@ void Sokoban_Box::change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_bo
             if(new_box.type == Goal) new_box.change_type(Player_On_Goal);
             else if(new_box.type == Free) new_box.change_type(Player);
             else if(new_box.type == DeadLock_Zone_Free) new_box.change_type(DeadLock_Zone_Player);
-            else assert(false);
+            else
+            {
+                std::cout << old_box << "\t" << new_box << std::endl;
+                assert(false);
+            }
             break;
         default:
             std::cout << old_box.type << std::endl;
@@ -136,27 +140,7 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
 
 bool Sokoban_Box::is_moveable(Move_Direction dir)
 {
-    Sokoban_Box *move_dir_box = nullptr;
-    switch(dir)
-    {
-        case up:
-            move_dir_box = this->nb_up;
-            break;
-        case down:
-            move_dir_box = this->nb_down;
-            break;
-        case left:
-            move_dir_box = this->nb_left;
-            break;
-        case right:
-            move_dir_box = this->nb_right;
-            break;
-        default:
-            std::cout << dir << std::endl;
-            assert(false);
-    }
-
-    switch(move_dir_box->type)
+    switch(this->get_neighbour(dir)->type)
     {
         case Box:
         case Goal_Box:
