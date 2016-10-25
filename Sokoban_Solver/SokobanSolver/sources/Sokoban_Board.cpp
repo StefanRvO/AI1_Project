@@ -39,13 +39,13 @@ char Sokoban_Board::get_box_char(Box_Type type)
         case Goal_Box:        return '*';
         case Goal:            return '.';
         case Box:             return '$';
-        case DeadLock_Zone_Player:
+        case DeadLock_Zone_Player: //return '%';
         case Player:          return '@';
         case Player_On_Goal:  return '+';
-        case DeadLock_Zone_Free:
+        case DeadLock_Zone_Free:   //return '&';
         case Free:            return ' ';
         default:
-        throw std::runtime_error(std::string("Trying to convert invalid type to char.\nThis should not happen!"));
+        throw std::runtime_error(std::string("Trying to convert invalid type to char.\nThis should not happen! Type was" + std::to_string((int)type)));
     }
 
 }
@@ -200,7 +200,7 @@ void Sokoban_Board::populate_neighbours()
     }
 }
 
-std::vector<move> Sokoban_Board::find_possible_moves()
+std::vector<move> Sokoban_Board::find_possible_moves(Sokoban_Box* &upper_left)
 {   //Recursive move finder algorithm. This is probably pretty slow, so we should
     //maybe try to figure out a faster way..?
     std::vector<Sokoban_Box *> searched_fields;
@@ -208,10 +208,10 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     //Search all around the player
     std::vector<move> moves;
     moves.reserve(10);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields, moves);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields, moves);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::left, this->player_box->nb_left, searched_fields, moves);
-    Sokoban_Board::find_possible_moves_rec(Move_Direction::right, this->player_box->nb_right, searched_fields, moves);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::up, this->player_box->nb_up, searched_fields, moves, upper_left);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::down, this->player_box->nb_down, searched_fields, moves, upper_left);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::left, this->player_box->nb_left, searched_fields, moves, upper_left);
+    Sokoban_Board::find_possible_moves_rec(Move_Direction::right, this->player_box->nb_right, searched_fields, moves, upper_left);
 
     //Clear searched types
     for(auto &box : searched_fields)
@@ -223,8 +223,10 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     return moves;
 }
 
-void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box, std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves)
+void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
+    std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves, Sokoban_Box* &upper_left)
 {
+    if(upper_left->pos < search_box->pos) upper_left = search_box;
     Box_Type &this_type = search_box->type;
     switch(this_type)
     {
@@ -258,13 +260,13 @@ void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *sea
     }
     //Search around search_box, but not in the direction we came from.
     if(dir != down)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::up, search_box->nb_up, searched_fields, moves);
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::up, search_box->nb_up, searched_fields, moves, upper_left);
     if(dir != up)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::down, search_box->nb_down, searched_fields, moves);
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::down, search_box->nb_down, searched_fields, moves, upper_left);
     if(dir != right)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::left, search_box->nb_left, searched_fields, moves);
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::left, search_box->nb_left, searched_fields, moves, upper_left);
     if(dir != left)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields, moves);
+        Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields, moves, upper_left);
 }
 
 void Sokoban_Board::perform_move(move the_move, bool reverse)
@@ -303,9 +305,9 @@ int32_t Sokoban_Board::get_heuristic()
     //We also check for (very simple) deadlocks. We return a negative number if a deadlock
     //is detected.
     //Generate random number for deadlock detection
-    //static uint32_t calls = 0;
-    //if(calls++ % 1000 == 0) std::cout << calls << std::endl;
-
+    static uint32_t calls = 0;
+    if(calls++ % 100 == 0) std::cout << calls << std::endl;
+    //return 1;
     int64_t rand_num = rand_gen(gen);
     int32_t h_cost = 0;
     for(auto &box_pair : this->board_boxes)
@@ -327,8 +329,8 @@ int32_t Sokoban_Board::get_heuristic()
                 min_distance = 0;
                 break;
             }
-            uint32_t dist = abs(box->pos.x_pos - goal->pos.x_pos) +
-                abs(box->pos.y_pos - goal->pos.y_pos);
+            uint32_t dist = abs((int32_t)box->pos.x_pos - (int32_t)goal->pos.x_pos) +
+                abs((int32_t)box->pos.y_pos - (int32_t)goal->pos.y_pos);
             min_distance = std::min(min_distance, dist);
         }
         h_cost += min_distance;

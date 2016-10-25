@@ -12,13 +12,18 @@ std::vector<Sokoban_Box *> DeadLockDetector::get_static_deadlock_boxes(Sokoban_B
         if(box->type == Box) box->change_type(Free);
         else if(box->type == Goal_Box) box->change_type(Goal);
     }
-
+    board_copy.board_boxes.empty();
+    //delete Player
+    board_copy.player_box->change_type(Free);
     //For all goals, place a box and try to pull it to all fields, mark the visited ones.
     std::vector<Sokoban_Box> visited;
     for(auto &_goal : board_copy.goals)
     {
         //Make tmp board without searhed fields.
         auto tmp_board = board_copy;
+        //std::cout << "!!!!" << std::endl;
+        //std::cout << tmp_board << std::endl;
+        //std::cout << tmp_board.board_boxes.size() << std::endl;
         auto goal = &tmp_board.board[_goal->pos.x_pos][_goal->pos.y_pos];
         visited.push_back(*goal);
         goal->change_type(Goal_Searched);
@@ -28,6 +33,7 @@ std::vector<Sokoban_Box *> DeadLockDetector::get_static_deadlock_boxes(Sokoban_B
             if(goal->is_pullable(dir))
                 bipartite_search_rec(goal->get_neighbour(dir), visited);
         }
+        //std::cout << tmp_board << std::endl;
     }
 
     //Mark all visited fields in the board

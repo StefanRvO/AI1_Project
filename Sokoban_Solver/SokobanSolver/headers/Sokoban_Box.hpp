@@ -11,6 +11,10 @@ struct Position
     uint32_t y_pos;
 };
 
+//Check vertical first, then horisontal.
+bool operator<(const Position &pos1, const Position &pos2);
+
+
 enum Box_Type : uint8_t
 {
     Box, //A box which is not yet placed upon a goal $

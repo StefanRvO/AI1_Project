@@ -9,6 +9,7 @@ std::ostream& operator<<(std::ostream& os, const move& the_move)
 }
 
 Solver::Solver(Sokoban_Board *_board)
+: ttable(1000003)
 {
     this->board = _board;
 }
@@ -17,17 +18,21 @@ bool Solver::solve()
 {
 
     auto dead_fields = DeadLockDetector::get_static_deadlock_boxes(*this->board);
+    //std::cout << dead_fields.size() << std::endl;
+    //std::cout << *this->board << std::endl;
     for(auto &field : dead_fields)
     {
+        //std::cout << *field << std::endl;
         switch(field->type)
         {
             case Free: field->change_type(DeadLock_Zone_Free);
                 break;
             case Player: field->change_type(DeadLock_Zone_Player);
                 break;
-            default: return false;
+            default: break;
         }
     }
+    std::cout << *this->board << std::endl;
     /*for (auto &the_move : this->board->find_possible_moves())
     {
         std::cout << the_move << std::endl;
@@ -56,7 +61,16 @@ int32_t Solver::IDA_star_solve()
 int32_t Solver::IDA_search(uint32_t g, int32_t bound)
 {
     //std::cout << this->board->get_board_str() << std::endl;
-    int32_t h =  this->board->get_heuristic();
+    Sokoban_Box *upper_left = this->board->player_box;
+    auto moves = this->board->find_possible_moves(upper_left);
+    int32_t h = 0;
+    if(ttable.check_table(*this->board, upper_left->pos, g, &h) == false)
+    {
+        //std::cout << h << "\tFalse!" << std::endl;
+        return -1;
+    }
+    /*else
+        std::cout << h << "\t" << "True!" << std::endl;*/
 
     int32_t f = g + h;
     //std::cout << " H: " << h << ", G: " << g << std::endl;
@@ -64,7 +78,7 @@ int32_t Solver::IDA_search(uint32_t g, int32_t bound)
     if(h == 0) return 0;
     if(h == -1) return -1;
     int32_t min = 0xFFFFFF;
-    for (auto &the_move : this->board->find_possible_moves())
+    for (auto &the_move : moves)
     {
         this->board->perform_move(the_move);
         int32_t t = this->IDA_search( g + 1, bound);

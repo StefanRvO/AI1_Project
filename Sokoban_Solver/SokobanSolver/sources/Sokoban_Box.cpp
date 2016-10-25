@@ -2,6 +2,19 @@
 #include <cassert>
 #include <iostream>
 
+bool operator<(const Position &pos1, const Position &pos2)
+{
+    if(pos1.x_pos < pos2.x_pos)
+        return true;
+    else if(pos1.x_pos > pos2.x_pos)
+        return false;
+    if(pos1.y_pos < pos2.y_pos)
+        return true;
+    else
+        return false;
+
+}
+
 static Move_Direction get_reverse_direction(Move_Direction dir)
 {
     switch (dir) {
