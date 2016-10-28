@@ -87,11 +87,14 @@ std::vector <Sokoban_Box> Sokoban_Board::parse_row(const std::string &row_str, u
 
 Sokoban_Board::~Sokoban_Board()
 {
-    if(this->reachable)
+    if(this->reachable[0])
     {
-        for(uint32_t i = 0; i < this->size_x; i++)
+        for(uint16_t i = 0; i < MAX_DEPTH; i++)
+        {
+            for(uint32_t j = 0; j < this->size_x; j++)
+                delete[] this->reachable[i][j];
             delete[] this->reachable[i];
-        delete[] this->reachable;
+        }
     }
 }
 
@@ -103,12 +106,18 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
     this->board = _board.board;
     this->size_x = _board.size_x;
     this->size_y = _board.size_y;
-    this->reachable = new uint32_t*[this->size_x];
-    this->reachable_timestamp = _board.reachable_timestamp;
+    for(uint16_t i = 0; i < MAX_DEPTH; i++)
+    {
+        this->reachable[i] = new uint32_t*[this->size_x];
+        this->reachable_timestamp[i] = _board.reachable_timestamp[i];
+    }
     for(uint32_t x = 0; x < this->size_x; x++)
     {
-        this->reachable[x] = new uint32_t[this->size_y];
-        memcpy(this->reachable[x], _board.reachable[x], this->size_y);
+        for(uint16_t i = 0; i < MAX_DEPTH; i++)
+        {
+            this->reachable[i][x] = new uint32_t[this->size_y];
+            memcpy(this->reachable[i][x], _board.reachable[i][x], this->size_y);
+        }
     }
     //Create_neighbour pointers
     this->populate_neighbours();
@@ -135,21 +144,25 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->size_y = rows.size();
     //Alloc and fill the board.
     this->board = std::vector< std::vector <Sokoban_Box> >(max_x);
-    this->reachable = new uint32_t*[this->size_x];
-    for(uint32_t x = 0; x < this->size_x; x++)
+    for(uint32_t i = 0; i < MAX_DEPTH; i++)
     {
-        this->reachable[x] = new uint32_t[this->size_y];
-        auto &collumn = this->board[x];
-        for(uint32_t y = 0; y < this->size_y; y++)
+        this->reachable[i] = new uint32_t*[this->size_x];
+
+        for(uint32_t x = 0; x < this->size_x; x++)
         {
-            if(board_vec[y].size() < x + 1) //Add a wall if the given string has omitted it at the end.
-                collumn.push_back(Sokoban_Box(Wall, {x, y}));
-            else
-                collumn.push_back(board_vec[y][x]);
+            this->reachable[i][x] = new uint32_t[this->size_y];
+            auto &collumn = this->board[x];
+            for(uint32_t y = 0; y < this->size_y; y++)
+            {
+                if(board_vec[y].size() < x + 1) //Add a wall if the given string has omitted it at the end.
+                    collumn.push_back(Sokoban_Box(Wall, {x, y}));
+                else
+                    collumn.push_back(board_vec[y][x]);
+            }
         }
     }
     this->populate_neighbours();
-    this->calc_reachable();
+    this->calc_reachable(0);
 }
 
 std::string Sokoban_Board::get_board_str(bool with_coords) const
@@ -218,7 +231,7 @@ void Sokoban_Board::populate_neighbours()
 
 
 
-std::vector<move> Sokoban_Board::find_possible_moves()
+std::vector<move> Sokoban_Board::find_possible_moves(uint32_t depth)
 {
     std::vector<move> moves;
     moves.reserve(20);
@@ -229,7 +242,7 @@ std::vector<move> Sokoban_Board::find_possible_moves()
         {
             const Move_Direction &dir = (Move_Direction)_dir;
             Move_Direction reverse_dir = get_reverse_direction(dir);
-            if(box.is_moveable(dir) && this->is_reachable(box.get_neighbour(reverse_dir)))
+            if(box.is_moveable(dir) && this->is_reachable(box.get_neighbour(reverse_dir), depth))
             {
                 auto the_move = move(dir, &box);
                 moves.push_back(the_move);
@@ -284,11 +297,11 @@ void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *sea
         Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields, moves);
 }
 
-void Sokoban_Board::perform_move(move the_move, bool reverse)
+void Sokoban_Board::perform_move(move the_move, bool reverse, uint32_t depth)
 {
-    /*static uint64_t lol = 0;
-    lol++;
-    if(lol % 10000 == 0) std::cout << lol << std::endl;*/
+    static uint64_t lol = 0;
+    //lol++;
+    //if(lol % 10000 == 0) std::cout << lol << std::endl;
     Sokoban_Box *start_pos  = nullptr;
     Sokoban_Box *end_pos    = nullptr;
 
@@ -311,7 +324,8 @@ void Sokoban_Board::perform_move(move the_move, bool reverse)
     this->board_boxes.erase(start_pos);
     this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
     //Recalculate reachable zone
-    this->calc_reachable();
+    if(!reverse)
+        this->calc_reachable(depth + 1);
     assert(start_size == this->board_boxes.size());
 }
 
@@ -354,42 +368,42 @@ int32_t Sokoban_Board::get_heuristic()
     }
     return h_cost;
 }
-bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
+bool Sokoban_Board::is_reachable(Sokoban_Box *box, uint32_t depth) const
 {
     Position &tmp = box->pos;
-    if(this->reachable[tmp.x_pos][tmp.y_pos] == this->reachable_timestamp)
+    if(this->reachable[depth][tmp.x_pos][tmp.y_pos] == this->reachable_timestamp[depth])
         return true;
     return false;
 }
 
-void Sokoban_Board::calc_reachable()
+void Sokoban_Board::calc_reachable(uint32_t depth)
 {
-    this->upper_left_reachable = this->player_box;
-    if(++this->reachable_timestamp == 0)
+    this->upper_left_reachable[depth] = this->player_box;
+    if(++this->reachable_timestamp[depth] == 0)
     {
         for(uint32_t x = 0; x < this->size_x; x++)
             for(uint32_t y = 0; y < this->size_y; y++)
-                this->reachable[x][y] = 0;
-        this->reachable_timestamp++;
+                this->reachable[depth][x][y] = 0;
+        this->reachable_timestamp[depth]++;
     }
-    this->reachable[player_box->pos.x_pos][player_box->pos.y_pos] = this->reachable_timestamp;
-    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up);
-    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down);
-    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left);
-    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right);
+    this->reachable[depth][player_box->pos.x_pos][player_box->pos.y_pos] = this->reachable_timestamp[depth];
+    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up, depth);
+    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down, depth);
+    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left, depth);
+    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right, depth);
 }
 
-void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box)
+void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box, uint32_t depth)
 {
-    if(box->pos < this->upper_left_reachable->pos) upper_left_reachable = box;
-    this->reachable[box->pos.x_pos][box->pos.y_pos] = this->reachable_timestamp;
-    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up))
-        this->calc_reachable_rec(box->nb_up);
-    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down))
-        this->calc_reachable_rec(box->nb_down);
-    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left))
-        this->calc_reachable_rec(box->nb_left);
-    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right))
-        this->calc_reachable_rec(box->nb_right);
+    if(box->pos < this->upper_left_reachable[depth]->pos) upper_left_reachable[depth] = box;
+    this->reachable[depth][box->pos.x_pos][box->pos.y_pos] = this->reachable_timestamp[depth];
+    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up, depth))
+        this->calc_reachable_rec(box->nb_up, depth);
+    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down, depth))
+        this->calc_reachable_rec(box->nb_down, depth);
+    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left, depth))
+        this->calc_reachable_rec(box->nb_left, depth);
+    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right, depth))
+        this->calc_reachable_rec(box->nb_right, depth);
 
 }

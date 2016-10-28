@@ -61,8 +61,10 @@ int32_t Solver::IDA_star_solve()
 int32_t Solver::IDA_search(uint32_t g, int32_t bound)
 {
     //std::cout << this->board->get_board_str() << std::endl;
+    uint32_t depth = g;
+    std::cout << "\t\t" << depth << std::endl;
     int32_t h = 0;
-    if(ttable.check_table(*this->board, this->board->upper_left_reachable->pos, g, &h) == false)
+    if(ttable.check_table(*this->board, this->board->upper_left_reachable[depth]->pos, g, &h) == false)
     {
         //std::cout << h << "\tFalse!" << std::endl;
         return -1;
@@ -76,16 +78,16 @@ int32_t Solver::IDA_search(uint32_t g, int32_t bound)
     if(h == 0) return 0;
     if(h == -1) return -1;
     int32_t min = 0xFFFFFF;
-    for (auto &the_move : this->board->find_possible_moves())
+    for (auto &the_move : this->board->find_possible_moves(depth))
     {
-        this->board->perform_move(the_move);
+        this->board->perform_move(the_move, false, depth);
         int32_t t = this->IDA_search( g + 1, bound);
         if(t == 0)
         {
             std::cout << the_move << std::endl;
             return 0;
         }
-        this->board->perform_move(the_move, true);
+        this->board->perform_move(the_move, true, depth);
         if(t < 0) continue;
         if(t < min) min = t;
     }
