@@ -5,9 +5,6 @@
 #include <string>
 #include <map>
 #include <random>
-#define MAX_DEPTH 200
-
-
 class Sokoban_Board;
 class Sokoban_Board
 {
@@ -20,9 +17,8 @@ class Sokoban_Board
         std::vector< std::vector <Sokoban_Box> > board;
         uint32_t size_x;
         uint32_t size_y;
-        uint32_t reachable_timestamp[MAX_DEPTH] = {0xFFFFFFFF}; //Counter used for calculation of the reachable region.
-        uint32_t **reachable[MAX_DEPTH] = {nullptr};
-        Sokoban_Box *upper_left_reachable[MAX_DEPTH] = {nullptr};
+        uint32_t **reachable = nullptr;
+        Sokoban_Box *upper_left_reachable = nullptr;
 
         Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
@@ -65,24 +61,24 @@ class Sokoban_Board
         //Return the board in the format explained above.
         std::string get_board_str(bool with_coords = false) const;
         void populate_neighbours();
-        std::vector<move> find_possible_moves(uint32_t depth);
+        std::vector<move> find_possible_moves();
 
-        void calc_reachable(uint32_t depth);
-        void calc_reachable_rec(Sokoban_Box *box, uint32_t depth);
+        void calc_reachable();
+        void calc_reachable_rec(Sokoban_Box *box, uint32_t value_to_set);
 
         static void  find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
             std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
-        void perform_move(move the_move, bool reverse = false, uint32_t depth = 0);
+        void perform_move(move the_move, bool reverse = false, bool recalculate = true);
         int32_t get_heuristic();
-        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &board)
+        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &_board)
         {
-            os << board.get_board_str();
+            os << _board.get_board_str();
             return os;
         }
         //Static functions
         static Box_Type parse_char(char chr);
         static char get_box_char(Box_Type type);
         static std::vector <Sokoban_Box> parse_row(const std::string &row_str, uint32_t y_pos);
-        bool is_reachable(Sokoban_Box *box, uint32_t depth) const;
+        bool is_reachable(Sokoban_Box *box) const;
 };

@@ -87,14 +87,11 @@ std::vector <Sokoban_Box> Sokoban_Board::parse_row(const std::string &row_str, u
 
 Sokoban_Board::~Sokoban_Board()
 {
-    if(this->reachable[0])
+    if(this->reachable)
     {
-        for(uint16_t i = 0; i < MAX_DEPTH; i++)
-        {
-            for(uint32_t j = 0; j < this->size_x; j++)
-                delete[] this->reachable[i][j];
+        for(uint32_t i = 0; i < this->size_x; i++)
             delete[] this->reachable[i];
-        }
+        delete[] this->reachable;
     }
 }
 
@@ -106,19 +103,13 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
     this->board = _board.board;
     this->size_x = _board.size_x;
     this->size_y = _board.size_y;
-    for(uint16_t i = 0; i < MAX_DEPTH; i++)
-    {
-        this->reachable[i] = new uint32_t*[this->size_x];
-        this->reachable_timestamp[i] = _board.reachable_timestamp[i];
-    }
+    this->reachable = new uint32_t*[this->size_x];
     for(uint32_t x = 0; x < this->size_x; x++)
     {
-        for(uint16_t i = 0; i < MAX_DEPTH; i++)
-        {
-            this->reachable[i][x] = new uint32_t[this->size_y];
-            memcpy(this->reachable[i][x], _board.reachable[i][x], this->size_y);
-        }
+        this->reachable[x] = new uint32_t[this->size_y];
+        memcpy(this->reachable[x], _board.reachable[x], this->size_y);
     }
+    this->upper_left_reachable = &this->board[_board.upper_left_reachable->pos.x_pos][_board.upper_left_reachable->pos.y_pos];
     //Create_neighbour pointers
     this->populate_neighbours();
 }
@@ -144,25 +135,21 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->size_y = rows.size();
     //Alloc and fill the board.
     this->board = std::vector< std::vector <Sokoban_Box> >(max_x);
-    for(uint32_t i = 0; i < MAX_DEPTH; i++)
+    this->reachable = new uint32_t*[this->size_x];
+    for(uint32_t x = 0; x < this->size_x; x++)
     {
-        this->reachable[i] = new uint32_t*[this->size_x];
-
-        for(uint32_t x = 0; x < this->size_x; x++)
+        this->reachable[x] = new uint32_t[this->size_y];
+        auto &collumn = this->board[x];
+        for(uint32_t y = 0; y < this->size_y; y++)
         {
-            this->reachable[i][x] = new uint32_t[this->size_y];
-            auto &collumn = this->board[x];
-            for(uint32_t y = 0; y < this->size_y; y++)
-            {
-                if(board_vec[y].size() < x + 1) //Add a wall if the given string has omitted it at the end.
-                    collumn.push_back(Sokoban_Box(Wall, {x, y}));
-                else
-                    collumn.push_back(board_vec[y][x]);
-            }
+            if(board_vec[y].size() < x + 1) //Add a wall if the given string has omitted it at the end.
+                collumn.push_back(Sokoban_Box(Wall, {x, y}));
+            else
+                collumn.push_back(board_vec[y][x]);
         }
     }
     this->populate_neighbours();
-    this->calc_reachable(0);
+    this->calc_reachable();
 }
 
 std::string Sokoban_Board::get_board_str(bool with_coords) const
@@ -231,7 +218,7 @@ void Sokoban_Board::populate_neighbours()
 
 
 
-std::vector<move> Sokoban_Board::find_possible_moves(uint32_t depth)
+std::vector<move> Sokoban_Board::find_possible_moves()
 {
     std::vector<move> moves;
     moves.reserve(20);
@@ -242,7 +229,7 @@ std::vector<move> Sokoban_Board::find_possible_moves(uint32_t depth)
         {
             const Move_Direction &dir = (Move_Direction)_dir;
             Move_Direction reverse_dir = get_reverse_direction(dir);
-            if(box.is_moveable(dir) && this->is_reachable(box.get_neighbour(reverse_dir), depth))
+            if(box.is_moveable(dir) && this->is_reachable(box.get_neighbour(reverse_dir)))
             {
                 auto the_move = move(dir, &box);
                 moves.push_back(the_move);
@@ -252,56 +239,12 @@ std::vector<move> Sokoban_Board::find_possible_moves(uint32_t depth)
     return moves;
 }
 
-void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
-    std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves)
-{
-    Box_Type &this_type = search_box->type;
-    switch(this_type)
-    {
-        case Free_Searched:
-        case Goal_Searched:
-        case DeadLock_Zone_Free_Searched:
-        case Wall:
-        case Player:
-        case DeadLock_Zone_Player:
-        case Player_On_Goal:
-            return;
-        case Free:
-            search_box->type = Free_Searched;
-            searched_fields.push_back(search_box);
-            break;
-        case DeadLock_Zone_Free:
-            search_box->type = DeadLock_Zone_Free_Searched;
-            searched_fields.push_back(search_box);
-            break;
-        case Goal:
-            search_box->type = Goal_Searched;
-            searched_fields.push_back(search_box);
-            break;
-        case Box:
-        case Goal_Box:
-            if(search_box->is_moveable(dir)) moves.push_back(move(dir, search_box));
-            return;
-        default:
-            std::cout << this_type << std::endl;
-            assert(false);
-    }
-    //Search around search_box, but not in the direction we came from.
-    if(dir != down)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::up, search_box->nb_up, searched_fields, moves);
-    if(dir != up)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::down, search_box->nb_down, searched_fields, moves);
-    if(dir != right)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::left, search_box->nb_left, searched_fields, moves);
-    if(dir != left)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields, moves);
-}
 
-void Sokoban_Board::perform_move(move the_move, bool reverse, uint32_t depth)
+void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
 {
-    static uint64_t lol = 0;
-    //lol++;
-    //if(lol % 10000 == 0) std::cout << lol << std::endl;
+    /*static uint64_t lol = 0;
+    lol++;
+    if(lol % 10000 == 0) std::cout << lol << std::endl;*/
     Sokoban_Box *start_pos  = nullptr;
     Sokoban_Box *end_pos    = nullptr;
 
@@ -324,8 +267,8 @@ void Sokoban_Board::perform_move(move the_move, bool reverse, uint32_t depth)
     this->board_boxes.erase(start_pos);
     this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
     //Recalculate reachable zone
-    if(!reverse)
-        this->calc_reachable(depth + 1);
+    if(recalculate)
+        this->calc_reachable();
     assert(start_size == this->board_boxes.size());
 }
 
@@ -336,10 +279,10 @@ int32_t Sokoban_Board::get_heuristic()
     //We also check for (very simple) deadlocks. We return a negative number if a deadlock
     //is detected.
     //Generate random number for deadlock detection
-    static uint32_t calls = 0;
-    if(calls++ % 100 == 0) std::cout << calls << std::endl;
+    /*static uint32_t calls = 0;
+    if(calls++ % 100 == 0) std::cout << calls << std::endl;*/
     //return 1;
-    int64_t rand_num = rand_gen(gen);
+    __attribute__((unused)) int64_t rand_num = rand_gen(gen);
     int32_t h_cost = 0;
     for(auto &box_pair : this->board_boxes)
     {
@@ -368,42 +311,39 @@ int32_t Sokoban_Board::get_heuristic()
     }
     return h_cost;
 }
-bool Sokoban_Board::is_reachable(Sokoban_Box *box, uint32_t depth) const
+bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
 {
     Position &tmp = box->pos;
-    if(this->reachable[depth][tmp.x_pos][tmp.y_pos] == this->reachable_timestamp[depth])
+    if(this->reachable[tmp.x_pos][tmp.y_pos] != 0 )
         return true;
     return false;
 }
 
-void Sokoban_Board::calc_reachable(uint32_t depth)
+void Sokoban_Board::calc_reachable()
 {
-    this->upper_left_reachable[depth] = this->player_box;
-    if(++this->reachable_timestamp[depth] == 0)
-    {
-        for(uint32_t x = 0; x < this->size_x; x++)
-            for(uint32_t y = 0; y < this->size_y; y++)
-                this->reachable[depth][x][y] = 0;
-        this->reachable_timestamp[depth]++;
-    }
-    this->reachable[depth][player_box->pos.x_pos][player_box->pos.y_pos] = this->reachable_timestamp[depth];
-    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up, depth);
-    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down, depth);
-    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left, depth);
-    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right, depth);
+    this->upper_left_reachable = this->player_box;
+    //Clear reachable map
+    for(uint32_t x = 0; x < this->size_x; x++)
+        for(uint32_t y = 0; y < this->size_y; y++)
+            this->reachable[x][y] = 0;
+    this->reachable[player_box->pos.x_pos][player_box->pos.y_pos] = 1;
+    uint32_t value_to_set = 1;
+    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up, value_to_set);
+    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down, value_to_set);
+    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left, value_to_set);
+    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right, value_to_set);
 }
 
-void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box, uint32_t depth)
+void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box, uint32_t value_to_set)
 {
-    if(box->pos < this->upper_left_reachable[depth]->pos) upper_left_reachable[depth] = box;
-    this->reachable[depth][box->pos.x_pos][box->pos.y_pos] = this->reachable_timestamp[depth];
-    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up, depth))
-        this->calc_reachable_rec(box->nb_up, depth);
-    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down, depth))
-        this->calc_reachable_rec(box->nb_down, depth);
-    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left, depth))
-        this->calc_reachable_rec(box->nb_left, depth);
-    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right, depth))
-        this->calc_reachable_rec(box->nb_right, depth);
-
+    if(box->pos < this->upper_left_reachable->pos) upper_left_reachable = box;
+    this->reachable[box->pos.x_pos][box->pos.y_pos] = value_to_set;
+    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up))
+        this->calc_reachable_rec(box->nb_up, value_to_set);
+    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down))
+        this->calc_reachable_rec(box->nb_down, value_to_set);
+    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left))
+        this->calc_reachable_rec(box->nb_left, value_to_set);
+    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right))
+        this->calc_reachable_rec(box->nb_right, value_to_set);
 }
