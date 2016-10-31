@@ -17,7 +17,6 @@ class Sokoban_Board
         std::vector< std::vector <Sokoban_Box> > board;
         uint32_t size_x;
         uint32_t size_y;
-        uint32_t reachable_timestamp = 0xFFFFFFFF; //Counter used for calculation of the reachable region
         uint32_t **reachable = nullptr;
         Sokoban_Box *upper_left_reachable = nullptr;
 
@@ -65,16 +64,16 @@ class Sokoban_Board
         std::vector<move> find_possible_moves();
 
         void calc_reachable();
-        void calc_reachable_rec(Sokoban_Box *box);
+        void calc_reachable_rec(Sokoban_Box *box, uint32_t value_to_set);
 
         static void  find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
             std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
-        void perform_move(move the_move, bool reverse = false);
+        void perform_move(move the_move, bool reverse = false, bool recalculate = true);
         int32_t get_heuristic();
-        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &board)
+        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &_board)
         {
-            os << board.get_board_str();
+            os << _board.get_board_str();
             return os;
         }
         //Static functions
