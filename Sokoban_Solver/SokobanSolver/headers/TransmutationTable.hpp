@@ -56,7 +56,7 @@ struct state_entry
 
     uint32_t total_moves = 0; //Total number of moves performed to this state. Also used for tree traversal
 
-    static key_type create_full_key(const Sokoban_Board &board, const Position &upper_left)
+    static key_type create_full_key(const Sokoban_Board &board, __attribute__((unused)) const Position &upper_left)
     {
         key_type key = 0;
         for(auto &_box : board.board_boxes)
@@ -67,9 +67,9 @@ struct state_entry
             key += box.pos.y_pos;
             key <<= BITS_PER_COORD;
         }
-        key += upper_left.x_pos;
+        key += board.player_box->pos.x_pos;
         key <<= BITS_PER_COORD;
-        key += upper_left.y_pos;
+        key += board.player_box->pos.y_pos;
         return key;
     }
     //Comparison function for priority queue
