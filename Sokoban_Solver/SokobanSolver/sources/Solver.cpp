@@ -36,14 +36,14 @@ bool Solver::solve()
             default: break;
         }
     }
+    this->board->calc_reachable();
     std::cout << *this->board << std::endl;
-    /*for (auto &the_move : this->board->find_possible_moves())
+    for (auto &the_move : this->board->find_possible_moves())
     {
-        std::cout << the_move << std::endl;
+        std::cout << the_move << "\t" << this->board->get_move_cost(the_move) << std::endl;
     }
     std::cout << this->board->get_board_str(true);
-    return false;*/
-    this->board->calc_reachable();
+    //return false;
 
     //int32_t solve_result = this->IDA_star_solve();
     state_entry *goal_entry = A_star_solve();

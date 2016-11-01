@@ -6,11 +6,14 @@
 #include <random>
 #include <cstdint>
 #include <limits>
+//Cost added to specific move type
 #define LEFT_COST 1.5
 #define RIGHT_COST 1.3
 #define FORWARD_COST 1.1
 #define BACKWARD_COST 100 //This would be stupid
-#define MOVE_COST 1.
+
+#define MOVE_COST 1. //Cost added to all move types
+#define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {
@@ -306,7 +309,7 @@ int32_t Sokoban_Board::get_heuristic()
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
 {
-    if(box->cost_to_box != std::numeric_limits<float>::max())
+    if(box->cost_to_box != std::numeric_limits<float>::max() && !box->is_solid())
         return true;
     return false;
 }
@@ -328,7 +331,9 @@ void Sokoban_Board::calc_reachable()
     reachable_open_list.clear();
 
     Position &player_pos = this->player_box->pos;
-    this->board[player_pos.x_pos][player_pos.y_pos].cost_to_box = 0;
+    //We add this to all cost, as it is the cheapest possible move (we only consider moves which are pushing a box.)
+    this->board[player_pos.x_pos][player_pos.y_pos].cost_to_box = PUSH_COST;
+
     //Insert everything into queue(but not at the edges, this will never be part of the reacable space)
     for(uint32_t x = 1; x < this->size_x - 1; x++)
         for(uint32_t y = 1; y < this->size_y - 1; y++)
@@ -343,15 +348,16 @@ void Sokoban_Board::calc_reachable()
         Sokoban_Box *top = *top_itt;
         if(top->cost_to_box == std::numeric_limits<float>::max())
             break;
-        if(upper_left_reachable->pos < top->pos) upper_left_reachable = top;
-
         reachable_open_list.erase(top_itt);
+        top->closed = true;
+        if(top->is_solid())
+            continue;
+        if(upper_left_reachable->pos < top->pos) upper_left_reachable = top;
         //std::cout << "Poped\t" << reachable_open_list.size() <<  std::endl;
         calc_reachable_helper(top->nb_up, top, MOVE_COST, Move_Direction::up);
         calc_reachable_helper(top->nb_down, top, MOVE_COST, Move_Direction::down);
         calc_reachable_helper(top->nb_left, top, MOVE_COST, Move_Direction::left);
         calc_reachable_helper(top->nb_right, top, MOVE_COST, Move_Direction::right);
-        top->closed = true;
     }
 }
 
@@ -421,7 +427,7 @@ void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *c
     }
 }
 
-float get_move_cost(move the_move)
+float Sokoban_Board::get_move_cost(move the_move)
 {
     Sokoban_Box* &box = the_move.second;
     Move_Direction &dir = the_move.first;
