@@ -32,7 +32,7 @@ bool TransmutationTable::check_table(const Sokoban_Board &board, const Position 
     //if(table_checks++ % 10000 == 0)std::cout << table_checks  <<std::endl;
 
     //Calculate the full key
-    b_mp::uint128_t full_key = state_entry::create_full_key(board, upper_left);
+    key_type full_key = state_entry::create_full_key(board, upper_left);
     //std::cout << full_key << std::endl;
     //Check if the entry exists
     bucket *the_bucket = this->table +(size_t)(full_key % this->table_size);
@@ -71,7 +71,7 @@ bool TransmutationTable::check_table(const Sokoban_Board &board, const Position 
     return true;
 }
 
-state_entry *TransmutationTable::get_entry(b_mp::uint128_t _full_key)
+state_entry *TransmutationTable::get_entry(key_type _full_key)
 {
     bucket *the_bucket = this->table +(size_t)(_full_key % this->table_size);
     for(state_entry &entry : the_bucket->entries)
@@ -99,6 +99,6 @@ state_entry *TransmutationTable::get_random_entry()
 
 state_entry *TransmutationTable::get_entry(const Sokoban_Board &board, const Position &upper_left)
 {
-    b_mp::uint128_t full_key = state_entry::create_full_key(board, upper_left);
+    key_type full_key = state_entry::create_full_key(board, upper_left);
     return this->get_entry(full_key);
 }

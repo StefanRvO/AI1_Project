@@ -7,16 +7,30 @@
 #include "Sokoban_Board.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <list>
-//#define BUCKET_SIZE 4
-//#define REPLACE
+#define MAX_BOXES 50
 #define BITS_PER_COORD 6
 
+#define BITS_TO_KEY ((MAX_BOXES + 1) * BITS_PER_COORD * 2)
+
 namespace b_mp = boost::multiprecision;
+
+
+#if BITS_TO_KEY <= 128
+typedef b_mp::uint128_t key_type;
+#elif BITS_TO_KEY <= 256
+typedef b_mp::uint256_t key_type;
+#elif BITS_TO_KEY <= 512
+typedef b_mp::uint512_t key_type;
+#elif BITS_TO_KEY <= 1024
+typedef b_mp::uint1024_t key_type;
+#else
+#error No available type to make the key.
+#endif
 
 struct state_entry;
 struct state_entry
 {
-    b_mp::uint128_t full_key; //The full board state. The state contains the position of every box (12 bit per box, limiting the size of the map to 64*64).
+    key_type full_key; //The full board state. The state contains the position of every box (12 bit per box, limiting the size of the map to 64*64).
                             //The last position is the uppermose, leftmost, position reachable by the player. This means,
                             //That we will be able to hash states which is not excatly equal, as the player position may be different, and match it to the same state.
     uint32_t cost_to_state;
@@ -42,9 +56,9 @@ struct state_entry
 
     uint32_t total_moves = 0; //Total number of moves performed to this state. Also used for tree traversal
 
-    static b_mp::uint128_t create_full_key(const Sokoban_Board &board, const Position &upper_left)
+    static key_type create_full_key(const Sokoban_Board &board, const Position &upper_left)
     {
-        b_mp::uint128_t key = 0;
+        key_type key = 0;
         for(auto &_box : board.board_boxes)
         {
             auto &box = *_box.first;
@@ -78,7 +92,7 @@ struct bucket
 {
     std::list<state_entry> entries;
 
-    int32_t insert_entry(b_mp::uint128_t _full_key, uint32_t _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
+    int32_t insert_entry(key_type _full_key, uint32_t _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
     {
         //static uint32_t insertions = 0;
         //std::cout << insertions++ << "\t" << _full_key % 1000003 <<std::endl;
@@ -106,7 +120,7 @@ class TransmutationTable
     ~TransmutationTable();
     void clear();
 
-    state_entry *get_entry(b_mp::uint128_t _full_key); //Get entry which matches the key.
+    state_entry *get_entry(key_type _full_key); //Get entry which matches the key.
                                                        //Return nullptr on no match
     state_entry *get_random_entry();                    //Return a random entry.
                                                        //Make sure that the table is not empty,
