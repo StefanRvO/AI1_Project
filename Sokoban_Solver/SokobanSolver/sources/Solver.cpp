@@ -47,6 +47,8 @@ bool Solver::solve()
 
     //int32_t solve_result = this->IDA_star_solve();
     state_entry *goal_entry = A_star_solve();
+    std::cout << "Solved\t" << goal_entry << std::endl;
+    std::cout << *this->board << std::endl;
     auto moves = this->get_path_to_state(goal_entry);
     for(auto &the_move : moves)
     {

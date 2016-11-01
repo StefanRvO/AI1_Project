@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <random>
+#include <set>
 class Sokoban_Board;
 class Sokoban_Board
 {
@@ -17,8 +18,9 @@ class Sokoban_Board
         std::vector< std::vector <Sokoban_Box> > board;
         uint32_t size_x;
         uint32_t size_y;
-        uint32_t **reachable = nullptr;
         Sokoban_Box *upper_left_reachable = nullptr;
+        std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
+
 
         Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
@@ -81,4 +83,6 @@ class Sokoban_Board
         static char get_box_char(Box_Type type);
         static std::vector <Sokoban_Box> parse_row(const std::string &row_str, uint32_t y_pos);
         bool is_reachable(Sokoban_Box *box) const;
+        void calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current, float edge_cost, Move_Direction move_dir);
+        float get_move_cost(move the_move); //Returns the move cost based on the reachable map.
 };

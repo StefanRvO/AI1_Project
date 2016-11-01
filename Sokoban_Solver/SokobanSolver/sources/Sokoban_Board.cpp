@@ -5,6 +5,13 @@
 #include <stdexcept>
 #include <random>
 #include <cstdint>
+#include <limits>
+#define LEFT_COST 1.5
+#define RIGHT_COST 1.3
+#define FORWARD_COST 1.1
+#define BACKWARD_COST 100 //This would be stupid
+#define MOVE_COST 1.
+
 uint8_t get_digits(uint32_t x)
 {
     uint8_t len = 1;
@@ -87,12 +94,6 @@ std::vector <Sokoban_Box> Sokoban_Board::parse_row(const std::string &row_str, u
 
 Sokoban_Board::~Sokoban_Board()
 {
-    if(this->reachable)
-    {
-        for(uint32_t i = 0; i < this->size_x; i++)
-            delete[] this->reachable[i];
-        delete[] this->reachable;
-    }
 }
 
 
@@ -103,12 +104,6 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
     this->board = _board.board;
     this->size_x = _board.size_x;
     this->size_y = _board.size_y;
-    this->reachable = new uint32_t*[this->size_x];
-    for(uint32_t x = 0; x < this->size_x; x++)
-    {
-        this->reachable[x] = new uint32_t[this->size_y];
-        memcpy(this->reachable[x], _board.reachable[x], this->size_y);
-    }
     this->upper_left_reachable = &this->board[_board.upper_left_reachable->pos.x_pos][_board.upper_left_reachable->pos.y_pos];
     //Create_neighbour pointers
     this->populate_neighbours();
@@ -135,10 +130,8 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->size_y = rows.size();
     //Alloc and fill the board.
     this->board = std::vector< std::vector <Sokoban_Box> >(max_x);
-    this->reachable = new uint32_t*[this->size_x];
     for(uint32_t x = 0; x < this->size_x; x++)
     {
-        this->reachable[x] = new uint32_t[this->size_y];
         auto &collumn = this->board[x];
         for(uint32_t y = 0; y < this->size_y; y++)
         {
@@ -313,37 +306,126 @@ int32_t Sokoban_Board::get_heuristic()
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
 {
-    Position &tmp = box->pos;
-    if(this->reachable[tmp.x_pos][tmp.y_pos] != 0 )
+    if(box->cost_to_box != std::numeric_limits<float>::max())
         return true;
     return false;
 }
 
 void Sokoban_Board::calc_reachable()
 {
+    //std::cout << "Calculated reachable" << std::endl;
+    //Zero out the map
     this->upper_left_reachable = this->player_box;
     //Clear reachable map
     for(uint32_t x = 0; x < this->size_x; x++)
         for(uint32_t y = 0; y < this->size_y; y++)
-            this->reachable[x][y] = 0;
-    this->reachable[player_box->pos.x_pos][player_box->pos.y_pos] = 1;
-    uint32_t value_to_set = 1;
-    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up, value_to_set);
-    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down, value_to_set);
-    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left, value_to_set);
-    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right, value_to_set);
+        {
+            this->board[x][y].cost_to_box = std::numeric_limits<float>::max();
+            this->board[x][y].closed = false;
+            this->board[x][y].parent_node = nullptr;
+        }
+    //Empty the priority queue
+    reachable_open_list.clear();
+
+    Position &player_pos = this->player_box->pos;
+    this->board[player_pos.x_pos][player_pos.y_pos].cost_to_box = 0;
+    //Insert everything into queue(but not at the edges, this will never be part of the reacable space)
+    for(uint32_t x = 1; x < this->size_x - 1; x++)
+        for(uint32_t y = 1; y < this->size_y - 1; y++)
+            {
+                reachable_open_list.insert(&this->board[x][y]);
+            }
+
+    while(reachable_open_list.size())
+    {
+        //Get top entry.
+        auto top_itt = reachable_open_list.begin();
+        Sokoban_Box *top = *top_itt;
+        if(top->cost_to_box == std::numeric_limits<float>::max())
+            break;
+        if(upper_left_reachable->pos < top->pos) upper_left_reachable = top;
+
+        reachable_open_list.erase(top_itt);
+        //std::cout << "Poped\t" << reachable_open_list.size() <<  std::endl;
+        calc_reachable_helper(top->nb_up, top, MOVE_COST, Move_Direction::up);
+        calc_reachable_helper(top->nb_down, top, MOVE_COST, Move_Direction::down);
+        calc_reachable_helper(top->nb_left, top, MOVE_COST, Move_Direction::left);
+        calc_reachable_helper(top->nb_right, top, MOVE_COST, Move_Direction::right);
+        top->closed = true;
+    }
 }
 
-void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box, uint32_t value_to_set)
+void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current,
+    float edge_cost, Move_Direction move_dir)
 {
-    if(box->pos < this->upper_left_reachable->pos) upper_left_reachable = box;
-    this->reachable[box->pos.x_pos][box->pos.y_pos] = value_to_set;
-    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up))
-        this->calc_reachable_rec(box->nb_up, value_to_set);
-    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down))
-        this->calc_reachable_rec(box->nb_down, value_to_set);
-    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left))
-        this->calc_reachable_rec(box->nb_left, value_to_set);
-    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right))
-        this->calc_reachable_rec(box->nb_right, value_to_set);
+    if(neighbour->closed || neighbour->is_solid())
+    {
+        return;
+    }
+    //calculate turn cost
+
+    //We can only have forward, left and right cost, as the robot will not reverse direction
+    //When it have not pushed a box.
+    //We may run into problems here as we can modify last moves of current later?
+    float turn_cost = 0;
+    switch(current->move_dir)
+    {
+        case up:
+            if      (move_dir == up) turn_cost = FORWARD_COST;
+            else if (move_dir == down) turn_cost = BACKWARD_COST;
+            else if (move_dir == left) turn_cost = LEFT_COST;
+            else if (move_dir == right) turn_cost = RIGHT_COST;
+        break;
+        case down:
+            if      (move_dir == up) turn_cost = BACKWARD_COST;
+            else if (move_dir == down) turn_cost = FORWARD_COST;
+            else if (move_dir == left) turn_cost = RIGHT_COST;
+            else if (move_dir == right) turn_cost = LEFT_COST;
+        break;
+        case left:
+            if      (move_dir == up) turn_cost = RIGHT_COST;
+            else if (move_dir == down) turn_cost = LEFT_COST;
+            else if (move_dir == left) turn_cost = FORWARD_COST;
+            else if (move_dir == right) turn_cost = RIGHT_COST;
+        break;
+        case right:
+            if      (move_dir == up) turn_cost = LEFT_COST;
+            else if (move_dir == down) turn_cost = RIGHT_COST;
+            else if (move_dir == left) turn_cost = BACKWARD_COST;
+            else if (move_dir == right) turn_cost = FORWARD_COST;
+        break;
+    }
+
+    float new_distance = current->cost_to_box + edge_cost + turn_cost;
+    //std::cout << "new cost" << new_distance << std::endl;
+    if(new_distance < neighbour->cost_to_box)
+    {
+        //Remove and insert into queue if not closed
+        if(!neighbour->closed)
+        {
+            //std::cout << "replaces" << std::endl;
+            auto itt = reachable_open_list.find(neighbour);
+            if(itt == reachable_open_list.end())
+            {
+                //std::cout << "Not found" << std::endl;
+                return;
+            }
+            neighbour->cost_to_box = new_distance;
+            neighbour->parent_node = current;
+            neighbour->move_dir = move_dir;
+            reachable_open_list.erase(itt);
+            //std::cout << reachable_open_list.size() << std::endl;
+            reachable_open_list.insert(neighbour);
+            //std::cout << reachable_open_list.size() << std::endl;
+        }
+    }
+}
+
+float get_move_cost(move the_move)
+{
+    Sokoban_Box* &box = the_move.second;
+    Move_Direction &dir = the_move.first;
+    //Get the square which the player is on when starting to push the box.
+    Sokoban_Box *player_start_push_box = box->get_neighbour(get_reverse_direction(dir));
+    return player_start_push_box->cost_to_box;
 }
