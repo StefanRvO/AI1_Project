@@ -1,2 +1,3 @@
+fix go_to_state. Won't work with tt-table not using upper left.
 Use the move cost calculation in A-star (trivial, but remember to place the player at the correct position after reverse moves, eventually by replaying last move from trans table)
 Create function to calculate player moves for each box move.

@@ -78,7 +78,7 @@ state_entry *Solver::A_star_solve()
     //Solve the sokoban puzzle using an A* algorithm
 
     //Add initial state to ttable and open list
-    move init_move = move(Move_Direction::up, &this->board->board[0][0]);
+    move init_move = move(Move_Direction::none, this->board->player_box);
     state_entry *this_entry = nullptr;
     int32_t h = 0;
     ttable.check_table(*this->board, this->board->upper_left_reachable->pos, 0, &h, init_move, nullptr, 0, this_entry);
@@ -206,7 +206,9 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
     last_move = &moves_from_goal.front();
   else
     last_move = &moves_from_init.back();
+
   this->board->calc_reachable(last_move->first);
+ // std::cout << ttable.get_entry(*board, board->upper_left_reachable->pos )->full_key << "\t" << goal_entry->full_key << std::endl;
 
 }
 
