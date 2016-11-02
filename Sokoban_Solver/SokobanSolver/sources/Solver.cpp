@@ -36,7 +36,7 @@ bool Solver::solve()
             default: break;
         }
     }
-    this->board->calc_reachable();
+    this->board->calc_reachable(Move_Direction::none);
     std::cout << *this->board << std::endl;
     for (auto &the_move : this->board->find_possible_moves())
     {
@@ -170,6 +170,7 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, state_entr
 void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
 { //Travel the tree from the init entry to the goal entry by traversing the tree saved in the transmutation table.
   //Create a vector for saving the needed moves
+  if(init_entry == goal_entry) return;
   std::vector<move> moves_from_init;
   std::vector<move> moves_from_goal;
   //Loop while full_key is not the same (we are not in the same state!)
@@ -200,7 +201,12 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
   {
       this->board->perform_move(move, false, false);
   }
-  this->board->calc_reachable();
+  move *last_move = nullptr;
+  if(moves_from_goal.size())
+    last_move = &moves_from_goal.front();
+  else
+    last_move = &moves_from_init.back();
+  this->board->calc_reachable(last_move->first);
 
 }
 

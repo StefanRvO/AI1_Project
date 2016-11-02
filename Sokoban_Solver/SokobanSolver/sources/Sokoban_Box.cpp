@@ -22,6 +22,7 @@ Move_Direction get_reverse_direction(Move_Direction dir)
         case down: return up;
         case left: return right;
         case right: return left;
+        case none: assert(false);
 
     }
     assert(false);

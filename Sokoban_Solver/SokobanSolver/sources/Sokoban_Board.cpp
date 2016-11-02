@@ -13,7 +13,7 @@
 #define BACKWARD_COST 100 //This would be stupid
 
 #define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
+#define PUSH_COST 4. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {
@@ -145,7 +145,7 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
         }
     }
     this->populate_neighbours();
-    this->calc_reachable();
+    this->calc_reachable(Move_Direction::none);
 }
 
 std::string Sokoban_Board::get_board_str(bool with_coords) const
@@ -264,7 +264,7 @@ void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
     this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
     //Recalculate reachable zone
     if(recalculate)
-        this->calc_reachable();
+        this->calc_reachable(the_move.first);
     assert(start_size == this->board_boxes.size());
 }
 
@@ -314,7 +314,7 @@ bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
     return false;
 }
 
-void Sokoban_Board::calc_reachable()
+void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
 {
     //std::cout << "Calculated reachable" << std::endl;
     //Zero out the map
@@ -333,6 +333,7 @@ void Sokoban_Board::calc_reachable()
     Position &player_pos = this->player_box->pos;
     //We add this to all cost, as it is the cheapest possible move (we only consider moves which are pushing a box.)
     this->board[player_pos.x_pos][player_pos.y_pos].cost_to_box = PUSH_COST;
+    this->board[player_pos.x_pos][player_pos.y_pos].move_dir = last_move_dir;
 
     //Insert everything into queue(but not at the edges, this will never be part of the reacable space)
     for(uint32_t x = 1; x < this->size_x - 1; x++)
@@ -373,34 +374,7 @@ void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *c
     //We can only have forward, left and right cost, as the robot will not reverse direction
     //When it have not pushed a box.
     //We may run into problems here as we can modify last moves of current later?
-    float turn_cost = 0;
-    switch(current->move_dir)
-    {
-        case up:
-            if      (move_dir == up) turn_cost = FORWARD_COST;
-            else if (move_dir == down) turn_cost = BACKWARD_COST;
-            else if (move_dir == left) turn_cost = LEFT_COST;
-            else if (move_dir == right) turn_cost = RIGHT_COST;
-        break;
-        case down:
-            if      (move_dir == up) turn_cost = BACKWARD_COST;
-            else if (move_dir == down) turn_cost = FORWARD_COST;
-            else if (move_dir == left) turn_cost = RIGHT_COST;
-            else if (move_dir == right) turn_cost = LEFT_COST;
-        break;
-        case left:
-            if      (move_dir == up) turn_cost = RIGHT_COST;
-            else if (move_dir == down) turn_cost = LEFT_COST;
-            else if (move_dir == left) turn_cost = FORWARD_COST;
-            else if (move_dir == right) turn_cost = RIGHT_COST;
-        break;
-        case right:
-            if      (move_dir == up) turn_cost = LEFT_COST;
-            else if (move_dir == down) turn_cost = RIGHT_COST;
-            else if (move_dir == left) turn_cost = BACKWARD_COST;
-            else if (move_dir == right) turn_cost = FORWARD_COST;
-        break;
-    }
+    float turn_cost = this->get_turn_direction_cost(current->move_dir, move_dir);
 
     float new_distance = current->cost_to_box + edge_cost + turn_cost;
     //std::cout << "new cost" << new_distance << std::endl;
@@ -426,6 +400,38 @@ void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *c
         }
     }
 }
+float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir)
+{
+    switch(last_dir)
+    {
+        case up:
+            if      (this_dir == up) return FORWARD_COST;
+            else if (this_dir == down) return BACKWARD_COST;
+            else if (this_dir == left) return LEFT_COST;
+            else if (this_dir == right) return RIGHT_COST;
+        break;
+        case down:
+            if      (this_dir == up) return BACKWARD_COST;
+            else if (this_dir == down) return FORWARD_COST;
+            else if (this_dir == left) return RIGHT_COST;
+            else if (this_dir == right) return LEFT_COST;
+        break;
+        case left:
+            if      (this_dir == up) return RIGHT_COST;
+            else if (this_dir == down) return LEFT_COST;
+            else if (this_dir == left) return FORWARD_COST;
+            else if (this_dir == right) return RIGHT_COST;
+        break;
+        case right:
+            if      (this_dir == up) return LEFT_COST;
+            else if (this_dir == down) return RIGHT_COST;
+            else if (this_dir == left) return BACKWARD_COST;
+            else if (this_dir == right) return FORWARD_COST;
+        break;
+        case none: return FORWARD_COST;
+    }
+    return std::numeric_limits<float>::max();
+}
 
 float Sokoban_Board::get_move_cost(move the_move)
 {
@@ -433,5 +439,8 @@ float Sokoban_Board::get_move_cost(move the_move)
     Move_Direction &dir = the_move.first;
     //Get the square which the player is on when starting to push the box.
     Sokoban_Box *player_start_push_box = box->get_neighbour(get_reverse_direction(dir));
-    return player_start_push_box->cost_to_box;
+    float start_push_cost = player_start_push_box->cost_to_box;
+    //Get the cost of pushing the box(simply turn direction cost)
+    float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir);
+    return push_turn_cost + start_push_cost + MOVE_COST;
 }

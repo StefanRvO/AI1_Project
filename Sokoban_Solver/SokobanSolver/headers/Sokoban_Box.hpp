@@ -37,6 +37,7 @@ enum Move_Direction
     down,
     left,
     right,
+    none,
 };
 Move_Direction get_reverse_direction(Move_Direction dir);
 

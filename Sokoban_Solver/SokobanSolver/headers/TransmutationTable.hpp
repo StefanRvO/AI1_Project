@@ -73,18 +73,18 @@ struct state_entry
         return key;
     }
     //Comparison function for priority queue
-    bool operator() (state_entry* &second, state_entry* &first)
-    {   //return true if first has a lower estimated cost then seconds
+    bool operator() (state_entry* &first, state_entry* &second)
+    {   //return true if first has a lower estimated cost then second
         //The estimated cost is heuristic + cost_to_state
 
         //If heuristic is -1, means we have no solution from this state.
-        if(first->heuristic < 0)
-            return false;
         if(second->heuristic < 0)
+            return false;
+        if(first->heuristic < 0)
             return true;
         uint32_t cost_estimate_1 = first->cost_to_state + first->heuristic;
         uint32_t cost_estimate_2 = second->cost_to_state + second->heuristic;
-        return cost_estimate_1 < cost_estimate_2;
+        return cost_estimate_1 > cost_estimate_2;
     }
 };
 
