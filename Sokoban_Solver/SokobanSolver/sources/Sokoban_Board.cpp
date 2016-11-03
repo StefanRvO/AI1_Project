@@ -313,7 +313,7 @@ bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
         return true;
     return false;
 }
-
+/*
 void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
 {
     //std::cout << "Calculated reachable" << std::endl;
@@ -360,7 +360,7 @@ void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
         calc_reachable_helper(top->nb_left, top, MOVE_COST, Move_Direction::left);
         calc_reachable_helper(top->nb_right, top, MOVE_COST, Move_Direction::right);
     }
-}
+}*/
 
 void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current,
     float edge_cost, Move_Direction move_dir)
@@ -433,6 +433,7 @@ float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direc
     return std::numeric_limits<float>::max();
 }
 
+
 float Sokoban_Board::get_move_cost(move the_move)
 {
     Sokoban_Box* &box = the_move.second;
@@ -443,4 +444,33 @@ float Sokoban_Board::get_move_cost(move the_move)
     //Get the cost of pushing the box(simply turn direction cost)
     float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir);
     return push_turn_cost + start_push_cost + MOVE_COST;
+}
+
+void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_move_dir)
+{
+    this->upper_left_reachable = this->player_box;
+    for(uint32_t x = 0; x < this->size_x; x++)
+        for(uint32_t y = 0; y < this->size_y; y++)
+            this->board[x][y].cost_to_box = std::numeric_limits<float>::max();
+
+    this->board[player_box->pos.x_pos][player_box->pos.y_pos].cost_to_box = 1;
+    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up);
+    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down);
+    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left);
+    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right);
+}
+
+void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box)
+{
+    if(box->pos < this->upper_left_reachable->pos) upper_left_reachable = box;
+    this->board[box->pos.x_pos][box->pos.y_pos].cost_to_box = 1;
+    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up))
+        this->calc_reachable_rec(box->nb_up);
+    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down))
+        this->calc_reachable_rec(box->nb_down);
+    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left))
+        this->calc_reachable_rec(box->nb_left);
+    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right))
+        this->calc_reachable_rec(box->nb_right);
+
 }

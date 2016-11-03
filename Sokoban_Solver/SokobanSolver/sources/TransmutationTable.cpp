@@ -1,6 +1,6 @@
 #include "TransmutationTable.hpp"
 #include <cstdlib>
-//#define ID //Use itterative deepening
+#define ID //Use itterative deepening
 
 TransmutationTable::TransmutationTable(uint32_t size)
 {

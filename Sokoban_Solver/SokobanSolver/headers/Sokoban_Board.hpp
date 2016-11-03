@@ -84,4 +84,5 @@ class Sokoban_Board
         void calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current, float edge_cost, Move_Direction move_dir);
         float get_move_cost(move the_move); //Returns the move cost based on the reachable map.
         float get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir);
+        void calc_reachable_rec(Sokoban_Box *box);
 };

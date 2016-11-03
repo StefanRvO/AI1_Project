@@ -45,7 +45,7 @@ bool Solver::solve()
     std::cout << this->board->get_board_str(true);
     //return false;
 
-    //int32_t solve_result = this->IDA_star_solve();
+    //__attribute__((unused)) int32_t solve_result = this->IDA_star_solve();
     state_entry *goal_entry = A_star_solve();
     std::cout << "Solved\t" << goal_entry << std::endl;
     std::cout << *this->board << std::endl;
@@ -56,7 +56,7 @@ bool Solver::solve()
     }
     std::cout << moves.size() << std::endl;
     //Go to random state
-    /*state_entry *random_state1 = this->ttable.get_random_entry();
+    state_entry *random_state1 = this->ttable.get_random_entry();
     state_entry *random_state2 = this->ttable.get_random_entry();
 
     //std::cout << random_state;
@@ -65,9 +65,9 @@ bool Solver::solve()
     std::cout << random_state1 << std::endl;
     std::cout << random_state2 << std::endl;
     go_to_state(this_state, random_state2);
-    this->board->calc_reachable();
+    this->board->calc_reachable(Move_Direction::none);
     this_state = this->ttable.get_entry(*this->board, this->board->upper_left_reachable->pos);
-    std::cout << this_state << std::endl;*/
+    std::cout << this_state << std::endl;
     //if(solve_result < 0) return false;
     //std::cout << "Solved in " << solve_result << " steps." << std::endl;
     return true;
@@ -126,11 +126,11 @@ int32_t Solver::IDA_star_solve()
         if(t == 0) return bound;
         if(t < 0) return t;
         bound = t;
-        std::cout << bound << std::endl;
+        std::cout << "bound:\t" << bound << std::endl;
     }
 }
 
-int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, state_entry *parent_node, move &last_move)
+int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, __attribute__((unused)) state_entry *parent_node, __attribute__((unused)) move &last_move)
 {
     //std::cout << this->board->get_board_str() << std::endl;
     int32_t h = 0;
@@ -139,11 +139,11 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, state_entr
     //std::cout << depth << std::endl;
     if(ttable.check_table(*this->board, this->board->upper_left_reachable->pos, g, &h, last_move, parent_node, depth, this_entry) == false)
     {
-        //std::cout << h << "\tFalse!" << std::endl;
+//        std::cout << h << "\tFalse!" << std::endl;
         return -1;
     }
-    /*else
-        std::cout << h << "\t" << "True!" << std::endl;*/
+//        std::cout << h << "\t" << "True!" << std::endl;
+//        h = this->board->get_heuristic();
 
     int32_t f = g + h;
     //std::cout << " H: " << h << ", G: " << g << std::endl;
@@ -153,14 +153,16 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, state_entr
     int32_t min = 0xFFFFFF;
     for (auto &the_move : this->board->find_possible_moves())
     {
-        this->board->perform_move(the_move);
+        this->board->perform_move(the_move, false, true);
         int32_t t = this->IDA_search(depth + 1,  g + 1, bound, this_entry, the_move);
         if(t == 0)
         {
             std::cout << the_move << std::endl;
+            std::cout << *this->board << std::endl;
+            this->board->perform_move(the_move, true, false);
             return 0;
         }
-        this->board->perform_move(the_move, true);
+        this->board->perform_move(the_move, true, false);
         if(t < 0) continue;
         if(t < min) min = t;
     }
