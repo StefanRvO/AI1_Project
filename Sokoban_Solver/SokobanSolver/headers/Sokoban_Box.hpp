@@ -37,6 +37,7 @@ enum Move_Direction
     down,
     left,
     right,
+    none,
 };
 Move_Direction get_reverse_direction(Move_Direction dir);
 
@@ -60,6 +61,12 @@ class Sokoban_Box
         Sokoban_Box *nb_down = nullptr;
         Sokoban_Box *nb_left = nullptr;
         Sokoban_Box *nb_right = nullptr;
+
+        //Used for computing a move cost map
+        float cost_to_box = 0;
+        bool closed = false;
+        Sokoban_Box *parent_node = nullptr;
+        Move_Direction move_dir = Move_Direction::up; //Direction moved last to reach this box from the player
 
 
         //Set the neighbours. Should be called after a move as this, for performance
@@ -101,5 +108,13 @@ class Sokoban_Box
         Sokoban_Box(Box_Type _type, Position _pos);
         Sokoban_Box() {};
         bool is_solid() const;
+        bool operator() (Sokoban_Box *first, Sokoban_Box *second)
+        {
+            if(first->cost_to_box == second->cost_to_box)
+            { //Compare pointer value, we don't allow equal elements.
+                return (void *)first < (void *)second;
+            }
+            return first->cost_to_box < second->cost_to_box;
+        }
 
 };

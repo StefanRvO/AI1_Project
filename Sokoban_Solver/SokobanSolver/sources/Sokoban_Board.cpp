@@ -5,6 +5,16 @@
 #include <stdexcept>
 #include <random>
 #include <cstdint>
+#include <limits>
+//Cost added to specific move type
+#define LEFT_COST 1.5
+#define RIGHT_COST 1.3
+#define FORWARD_COST 1.1
+#define BACKWARD_COST 100 //This would be stupid
+
+#define MOVE_COST 1. //Cost added to all move types
+#define PUSH_COST 4. //Cost for pushing a box(added to the above moves)
+
 uint8_t get_digits(uint32_t x)
 {
     uint8_t len = 1;
@@ -87,12 +97,6 @@ std::vector <Sokoban_Box> Sokoban_Board::parse_row(const std::string &row_str, u
 
 Sokoban_Board::~Sokoban_Board()
 {
-    if(this->reachable)
-    {
-        for(uint32_t i = 0; i < this->size_x; i++)
-            delete[] this->reachable[i];
-        delete[] this->reachable;
-    }
 }
 
 
@@ -103,13 +107,7 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
     this->board = _board.board;
     this->size_x = _board.size_x;
     this->size_y = _board.size_y;
-    this->reachable = new uint32_t*[this->size_x];
-    this->reachable_timestamp = _board.reachable_timestamp;
-    for(uint32_t x = 0; x < this->size_x; x++)
-    {
-        this->reachable[x] = new uint32_t[this->size_y];
-        memcpy(this->reachable[x], _board.reachable[x], this->size_y);
-    }
+    this->upper_left_reachable = &this->board[_board.upper_left_reachable->pos.x_pos][_board.upper_left_reachable->pos.y_pos];
     //Create_neighbour pointers
     this->populate_neighbours();
 }
@@ -135,10 +133,8 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->size_y = rows.size();
     //Alloc and fill the board.
     this->board = std::vector< std::vector <Sokoban_Box> >(max_x);
-    this->reachable = new uint32_t*[this->size_x];
     for(uint32_t x = 0; x < this->size_x; x++)
     {
-        this->reachable[x] = new uint32_t[this->size_y];
         auto &collumn = this->board[x];
         for(uint32_t y = 0; y < this->size_y; y++)
         {
@@ -149,7 +145,7 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
         }
     }
     this->populate_neighbours();
-    this->calc_reachable();
+    this->calc_reachable(Move_Direction::none);
 }
 
 std::string Sokoban_Board::get_board_str(bool with_coords) const
@@ -239,52 +235,8 @@ std::vector<move> Sokoban_Board::find_possible_moves()
     return moves;
 }
 
-void Sokoban_Board::find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
-    std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves)
-{
-    Box_Type &this_type = search_box->type;
-    switch(this_type)
-    {
-        case Free_Searched:
-        case Goal_Searched:
-        case DeadLock_Zone_Free_Searched:
-        case Wall:
-        case Player:
-        case DeadLock_Zone_Player:
-        case Player_On_Goal:
-            return;
-        case Free:
-            search_box->type = Free_Searched;
-            searched_fields.push_back(search_box);
-            break;
-        case DeadLock_Zone_Free:
-            search_box->type = DeadLock_Zone_Free_Searched;
-            searched_fields.push_back(search_box);
-            break;
-        case Goal:
-            search_box->type = Goal_Searched;
-            searched_fields.push_back(search_box);
-            break;
-        case Box:
-        case Goal_Box:
-            if(search_box->is_moveable(dir)) moves.push_back(move(dir, search_box));
-            return;
-        default:
-            std::cout << this_type << std::endl;
-            assert(false);
-    }
-    //Search around search_box, but not in the direction we came from.
-    if(dir != down)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::up, search_box->nb_up, searched_fields, moves);
-    if(dir != up)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::down, search_box->nb_down, searched_fields, moves);
-    if(dir != right)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::left, search_box->nb_left, searched_fields, moves);
-    if(dir != left)
-        Sokoban_Board::find_possible_moves_rec(Move_Direction::right, search_box->nb_right, searched_fields, moves);
-}
 
-void Sokoban_Board::perform_move(move the_move, bool reverse)
+void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
 {
     /*static uint64_t lol = 0;
     lol++;
@@ -311,7 +263,8 @@ void Sokoban_Board::perform_move(move the_move, bool reverse)
     this->board_boxes.erase(start_pos);
     this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
     //Recalculate reachable zone
-    this->calc_reachable();
+    if(recalculate)
+        this->calc_reachable(the_move.first);
     assert(start_size == this->board_boxes.size());
 }
 
@@ -322,10 +275,10 @@ int32_t Sokoban_Board::get_heuristic()
     //We also check for (very simple) deadlocks. We return a negative number if a deadlock
     //is detected.
     //Generate random number for deadlock detection
-    static uint32_t calls = 0;
-    if(calls++ % 100 == 0) std::cout << calls << std::endl;
+    /*static uint32_t calls = 0;
+    if(calls++ % 100 == 0) std::cout << calls << std::endl;*/
     //return 1;
-    int64_t rand_num = rand_gen(gen);
+    __attribute__((unused)) int64_t rand_num = rand_gen(gen);
     int32_t h_cost = 0;
     for(auto &box_pair : this->board_boxes)
     {
@@ -356,23 +309,151 @@ int32_t Sokoban_Board::get_heuristic()
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
 {
-    Position &tmp = box->pos;
-    if(this->reachable[tmp.x_pos][tmp.y_pos] == this->reachable_timestamp)
+    if(box->cost_to_box != std::numeric_limits<float>::max() && !box->is_solid())
         return true;
     return false;
 }
+/*
+void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
+{
+    //std::cout << "Calculated reachable" << std::endl;
+    //Zero out the map
+    this->upper_left_reachable = this->player_box;
+    //Clear reachable map
+    for(uint32_t x = 0; x < this->size_x; x++)
+        for(uint32_t y = 0; y < this->size_y; y++)
+        {
+            this->board[x][y].cost_to_box = std::numeric_limits<float>::max();
+            this->board[x][y].closed = false;
+            this->board[x][y].parent_node = nullptr;
+        }
+    //Empty the priority queue
+    reachable_open_list.clear();
 
-void Sokoban_Board::calc_reachable()
+    Position &player_pos = this->player_box->pos;
+    //We add this to all cost, as it is the cheapest possible move (we only consider moves which are pushing a box.)
+    this->board[player_pos.x_pos][player_pos.y_pos].cost_to_box = PUSH_COST;
+    this->board[player_pos.x_pos][player_pos.y_pos].move_dir = last_move_dir;
+
+    //Insert everything into queue(but not at the edges, this will never be part of the reacable space)
+    for(uint32_t x = 1; x < this->size_x - 1; x++)
+        for(uint32_t y = 1; y < this->size_y - 1; y++)
+            {
+                reachable_open_list.insert(&this->board[x][y]);
+            }
+
+    while(reachable_open_list.size())
+    {
+        //Get top entry.
+        auto top_itt = reachable_open_list.begin();
+        Sokoban_Box *top = *top_itt;
+        if(top->cost_to_box == std::numeric_limits<float>::max())
+            break;
+        reachable_open_list.erase(top_itt);
+        top->closed = true;
+        if(top->is_solid())
+            continue;
+        if(upper_left_reachable->pos < top->pos) upper_left_reachable = top;
+        //std::cout << "Poped\t" << reachable_open_list.size() <<  std::endl;
+        calc_reachable_helper(top->nb_up, top, MOVE_COST, Move_Direction::up);
+        calc_reachable_helper(top->nb_down, top, MOVE_COST, Move_Direction::down);
+        calc_reachable_helper(top->nb_left, top, MOVE_COST, Move_Direction::left);
+        calc_reachable_helper(top->nb_right, top, MOVE_COST, Move_Direction::right);
+    }
+}*/
+
+void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current,
+    float edge_cost, Move_Direction move_dir)
+{
+    if(neighbour->closed || neighbour->is_solid())
+    {
+        return;
+    }
+    //calculate turn cost
+
+    //We can only have forward, left and right cost, as the robot will not reverse direction
+    //When it have not pushed a box.
+    //We may run into problems here as we can modify last moves of current later?
+    float turn_cost = this->get_turn_direction_cost(current->move_dir, move_dir);
+
+    float new_distance = current->cost_to_box + edge_cost + turn_cost;
+    //std::cout << "new cost" << new_distance << std::endl;
+    if(new_distance < neighbour->cost_to_box)
+    {
+        //Remove and insert into queue if not closed
+        if(!neighbour->closed)
+        {
+            //std::cout << "replaces" << std::endl;
+            auto itt = reachable_open_list.find(neighbour);
+            if(itt == reachable_open_list.end())
+            {
+                //std::cout << "Not found" << std::endl;
+                return;
+            }
+            neighbour->cost_to_box = new_distance;
+            neighbour->parent_node = current;
+            neighbour->move_dir = move_dir;
+            reachable_open_list.erase(itt);
+            //std::cout << reachable_open_list.size() << std::endl;
+            reachable_open_list.insert(neighbour);
+            //std::cout << reachable_open_list.size() << std::endl;
+        }
+    }
+}
+float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir)
+{
+    switch(last_dir)
+    {
+        case up:
+            if      (this_dir == up) return FORWARD_COST;
+            else if (this_dir == down) return BACKWARD_COST;
+            else if (this_dir == left) return LEFT_COST;
+            else if (this_dir == right) return RIGHT_COST;
+        break;
+        case down:
+            if      (this_dir == up) return BACKWARD_COST;
+            else if (this_dir == down) return FORWARD_COST;
+            else if (this_dir == left) return RIGHT_COST;
+            else if (this_dir == right) return LEFT_COST;
+        break;
+        case left:
+            if      (this_dir == up) return RIGHT_COST;
+            else if (this_dir == down) return LEFT_COST;
+            else if (this_dir == left) return FORWARD_COST;
+            else if (this_dir == right) return RIGHT_COST;
+        break;
+        case right:
+            if      (this_dir == up) return LEFT_COST;
+            else if (this_dir == down) return RIGHT_COST;
+            else if (this_dir == left) return BACKWARD_COST;
+            else if (this_dir == right) return FORWARD_COST;
+        break;
+        case none: return FORWARD_COST;
+    }
+    return std::numeric_limits<float>::max();
+}
+
+
+float Sokoban_Board::get_move_cost(move the_move)
+{
+    Sokoban_Box* &box = the_move.second;
+    Move_Direction &dir = the_move.first;
+    //Get the square which the player is on when starting to push the box.
+    Sokoban_Box *player_start_push_box = box->get_neighbour(get_reverse_direction(dir));
+    float start_push_cost = player_start_push_box->cost_to_box;
+    //Get the cost of pushing the box(simply turn direction cost)
+    float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir);
+    return push_turn_cost + start_push_cost + MOVE_COST;
+}
+
+void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_move_dir)
 {
     this->upper_left_reachable = this->player_box;
-    if(++this->reachable_timestamp == 0)
-    {
-        for(uint32_t x = 0; x < this->size_x; x++)
-            for(uint32_t y = 0; y < this->size_y; y++)
-                this->reachable[x][y] = 0;
-        this->reachable_timestamp++;
-    }
-    this->reachable[player_box->pos.x_pos][player_box->pos.y_pos] = this->reachable_timestamp;
+    for(uint32_t x = 0; x < this->size_x; x++)
+        for(uint32_t y = 0; y < this->size_y; y++)
+            this->board[x][y].cost_to_box = std::numeric_limits<float>::max();
+
+    this->board[player_box->pos.x_pos][player_box->pos.y_pos].cost_to_box = 1;
     if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up);
     if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down);
     if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left);
@@ -382,7 +463,7 @@ void Sokoban_Board::calc_reachable()
 void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box)
 {
     if(box->pos < this->upper_left_reachable->pos) upper_left_reachable = box;
-    this->reachable[box->pos.x_pos][box->pos.y_pos] = this->reachable_timestamp;
+    this->board[box->pos.x_pos][box->pos.y_pos].cost_to_box = 1;
     if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up))
         this->calc_reachable_rec(box->nb_up);
     if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down))

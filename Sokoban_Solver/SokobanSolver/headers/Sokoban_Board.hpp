@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <random>
+#include <set>
 class Sokoban_Board;
 class Sokoban_Board
 {
@@ -17,9 +18,9 @@ class Sokoban_Board
         std::vector< std::vector <Sokoban_Box> > board;
         uint32_t size_x;
         uint32_t size_y;
-        uint32_t reachable_timestamp = 0xFFFFFFFF; //Counter used for calculation of the reachable region
-        uint32_t **reachable = nullptr;
         Sokoban_Box *upper_left_reachable = nullptr;
+        std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
+
 
         Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
@@ -64,17 +65,15 @@ class Sokoban_Board
         void populate_neighbours();
         std::vector<move> find_possible_moves();
 
-        void calc_reachable();
-        void calc_reachable_rec(Sokoban_Box *box);
-
+        void calc_reachable(Move_Direction last_move_dir);
         static void  find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
             std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
-        void perform_move(move the_move, bool reverse = false);
+        void perform_move(move the_move, bool reverse = false, bool recalculate = true);
         int32_t get_heuristic();
-        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &board)
+        friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &_board)
         {
-            os << board.get_board_str();
+            os << _board.get_board_str();
             return os;
         }
         //Static functions
@@ -82,4 +81,8 @@ class Sokoban_Board
         static char get_box_char(Box_Type type);
         static std::vector <Sokoban_Box> parse_row(const std::string &row_str, uint32_t y_pos);
         bool is_reachable(Sokoban_Box *box) const;
+        void calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current, float edge_cost, Move_Direction move_dir);
+        float get_move_cost(move the_move); //Returns the move cost based on the reachable map.
+        float get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir);
+        void calc_reachable_rec(Sokoban_Box *box);
 };

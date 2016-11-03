@@ -6,23 +6,59 @@
 
 #include "Sokoban_Board.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
-#define BUCKET_SIZE 4
-#define REPLACE
+#include <list>
+#define MAX_BOXES 50
 #define BITS_PER_COORD 6
 
+#define BITS_TO_KEY ((MAX_BOXES + 1) * BITS_PER_COORD * 2)
+
 namespace b_mp = boost::multiprecision;
+
+
+#if BITS_TO_KEY <= 128
+typedef b_mp::uint128_t key_type;
+#elif BITS_TO_KEY <= 256
+typedef b_mp::uint256_t key_type;
+#elif BITS_TO_KEY <= 512
+typedef b_mp::uint512_t key_type;
+#elif BITS_TO_KEY <= 1024
+typedef b_mp::uint1024_t key_type;
+#else
+#error No available type to make the key.
+#endif
 
 struct state_entry;
 struct state_entry
 {
-    b_mp::uint128_t full_key; //The full board state. The state contains the position of every box (12 bit per box, limiting the size of the map to 64*64).
+    key_type full_key; //The full board state. The state contains the position of every box (12 bit per box, limiting the size of the map to 64*64).
                             //The last position is the uppermose, leftmost, position reachable by the player. This means,
                             //That we will be able to hash states which is not excatly equal, as the player position may be different, and match it to the same state.
     uint32_t cost_to_state;
     int32_t heuristic;
-    static b_mp::uint128_t create_full_key(const Sokoban_Board &board, const Position &upper_left)
+
+    //These fields are used for tree traversal to get from one state to another.
+    //How to get from one state to another:
+    //I = initial node, the node we want to move away from.
+    //G = goal node, the node we want to get too.
+    //For the deepest node, travel following the parent pointers backwards untill we are at the same depth as the other node
+    //Always safe the needed steps to the goal node.
+    //Now, each node is at equal depth.
+    //Travel backwards from each node, untill we find a common ancestor (there should always be one at some point. It is easy to compare ancestors, just compare the full node key.)
+    //Beware, we may have adjusted parent key depth, as a faster path was found, thus for each step, be sure that we travel backwards untill the cost is equal for both nodes.
+    //A parent node should not be able to be deeper than a child, so this should be no problem.
+
+
+    move last_move; //Define the last move performed to get to this state. Used for tree traversal
+
+    state_entry *parent_entry; //Defines the the entry which we will get to by performing last move.
+                              //This can be used because we don't delete moves.
+                              //
+
+    uint32_t total_moves = 0; //Total number of moves performed to this state. Also used for tree traversal
+
+    static key_type create_full_key(const Sokoban_Board &board, __attribute__((unused)) const Position &upper_left)
     {
-        b_mp::uint128_t key = 0;
+        key_type key = 0;
         for(auto &_box : board.board_boxes)
         {
             auto &box = *_box.first;
@@ -31,59 +67,46 @@ struct state_entry
             key += box.pos.y_pos;
             key <<= BITS_PER_COORD;
         }
-        key += upper_left.x_pos;
+        key += board.player_box->pos.x_pos;
         key <<= BITS_PER_COORD;
-        key += upper_left.y_pos;
+        key += board.player_box->pos.y_pos;
         return key;
     }
-    int32_t replace_entry(b_mp::uint128_t _full_key, uint32_t _cost_to_state, const Sokoban_Board &board)
-    {
-        //Remove constness for the board, as we can't make get_heuristic const.
-        //This is OK!
-        auto &non_const_board = const_cast <Sokoban_Board &>(board);
-        this->heuristic = non_const_board.get_heuristic();
-        this->cost_to_state = _cost_to_state;
-        this->full_key = _full_key;
-        return this->heuristic;
+    //Comparison function for priority queue
+    bool operator() (state_entry* &first, state_entry* &second)
+    {   //return true if first has a lower estimated cost then second
+        //The estimated cost is heuristic + cost_to_state
+
+        //If heuristic is -1, means we have no solution from this state.
+        if(second->heuristic < 0)
+            return false;
+        if(first->heuristic < 0)
+            return true;
+        uint32_t cost_estimate_1 = first->cost_to_state + first->heuristic;
+        uint32_t cost_estimate_2 = second->cost_to_state + second->heuristic;
+        return cost_estimate_1 > cost_estimate_2;
     }
 };
 
 struct bucket
 {
-    state_entry entries[BUCKET_SIZE];
-    bool valid[BUCKET_SIZE];
-    uint8_t counter = 0;
+    std::list<state_entry> entries;
 
-    int32_t insert_entry(b_mp::uint128_t _full_key, uint32_t _cost_to_state, const Sokoban_Board &board)
+    int32_t insert_entry(key_type _full_key, uint32_t _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
     {
         //static uint32_t insertions = 0;
         //std::cout << insertions++ << "\t" << _full_key % 1000003 <<std::endl;
-        if(this->valid[this->counter] == false)
-        {
-            return this->replace_entry(_full_key, _cost_to_state, board);
-        }
-        else
-        {
-            #ifdef REPLACE
-            return this->replace_entry(_full_key, _cost_to_state, board);
-            #else
-            //Remove constness for the board, as we can't make get_heuristic const.
-            //This is OK!
-            auto &non_const_board = const_cast <Sokoban_Board &>(board);
-            int32_t heuristic = non_const_board.get_heuristic();
-            return heuristic;
-            #endif
-        }
-    }
-
-    int32_t replace_entry(b_mp::uint128_t _full_key, uint32_t _cost_to_state, const Sokoban_Board &board)
-    {
-        //static uint32_t collisions = 0;
-        //if(this->valid[this->counter])std::cout << collisions++ << "\t" << _full_key % 1000003 <<std::endl;
-        int32_t heuristic = entries[this->counter].replace_entry(_full_key, _cost_to_state, board);
-        this->valid[this->counter++] = true;
-        if(this->counter == BUCKET_SIZE) this->counter = 0;
-        return heuristic;
+        state_entry new_entry;
+        new_entry.full_key = _full_key;
+        new_entry.cost_to_state = _cost_to_state;
+        auto &non_const_board = const_cast <Sokoban_Board &>(board);
+        new_entry.heuristic = non_const_board.get_heuristic();
+        new_entry.last_move = last_move;
+        new_entry.parent_entry = parent_node;
+        new_entry.total_moves = depth;
+        entries.push_back(new_entry);
+        this_node = &entries.back();
+        return new_entry.heuristic;
     }
 };
 
@@ -96,11 +119,20 @@ class TransmutationTable
     TransmutationTable(uint32_t size);
     ~TransmutationTable();
     void clear();
+
+    state_entry *get_entry(key_type _full_key); //Get entry which matches the key.
+                                                       //Return nullptr on no match
+    state_entry *get_random_entry();                    //Return a random entry.
+                                                       //Make sure that the table is not empty,
+                                                       //or this will run forever.
+    state_entry *get_entry(const Sokoban_Board &board, const Position &upper_left);
+
     //check if this state already exists in the table.
     //If it exists, and the saved state has a lower cost than the given cost, return false, meaning
     //that we should not search from here, as a shorter path to this state exists.
     //If it exists, and the saved state has a higher cost, owerwrite the saved cost with the new,
     //And return true. Replace the value pointed to by heuristic with the saved heuristic.
     //If it does not exist, return true, calculate a new heuristic and put it in the memory given in the pointer.
-    bool check_table(const Sokoban_Board &board, const Position &upper_left, uint32_t cost_to_state, int32_t *heuristic);
+    bool check_table(const Sokoban_Board &board, const Position &upper_left, uint32_t cost_to_state, int32_t *heuristic,
+        move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node);
 };

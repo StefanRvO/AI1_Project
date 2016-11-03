@@ -22,6 +22,7 @@ Move_Direction get_reverse_direction(Move_Direction dir)
         case down: return up;
         case left: return right;
         case right: return left;
+        case none: assert(false);
 
     }
     assert(false);
@@ -125,6 +126,7 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
         default:
             assert(false);
     }
+    //First move the player, as the box may be moved to the player position.
     if(player_box != nullptr and player_box != new_player_pos)
         Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
     if(reverse)
@@ -134,7 +136,12 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
 
     if(!reverse) move_box = new_pos;
     player_box = new_player_pos;
-
+    //If we aren't reversing, and want to move the player, move the player one up now!
+    if(!reverse && player_box != nullptr)
+    {
+        Sokoban_Box::change_types_in_move(*player_box, *player_box->get_neighbour(dir));
+        player_box = player_box->get_neighbour(dir);
+    }
 }
 
 
