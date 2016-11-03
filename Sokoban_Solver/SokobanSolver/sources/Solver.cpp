@@ -170,14 +170,14 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, __attribut
 }
 
 void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
-{ //Travel the tree from the init entry to the goal entry by traversing the tree saved in the transmutation table.
-  //Create a vector for saving the needed moves
-  if(init_entry == goal_entry) return;
-  std::vector<move> moves_from_init;
-  std::vector<move> moves_from_goal;
-  //Loop while full_key is not the same (we are not in the same state!)
-  while(init_entry->full_key != goal_entry->full_key)
-  {
+{   //Travel the tree from the init entry to the goal entry by traversing the tree saved in the transmutation table.
+    //Create a vector for saving the needed moves
+    if(init_entry == goal_entry) return;
+    std::vector<move> moves_from_init;
+    std::vector<move> moves_from_goal;
+    //Loop while full_key is not the same (we are not in the same state!)
+    while(init_entry->full_key != goal_entry->full_key)
+    {
       //std::cout << goal_entry->full_key << "\t" << init_entry->full_key << std::endl;
       //std::cout << goal_entry << "\t" << init_entry << std::endl;
       //std::cout << goal_entry->total_moves << "\t" << init_entry->total_moves << std::endl;
@@ -194,24 +194,46 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
           assert(goal_entry->parent_entry != nullptr);
           goal_entry = goal_entry->parent_entry;
       }
-  }
-  for(auto &move : moves_from_init)
-  {
+    }
+    for(auto &move : moves_from_init)
+    {
       this->board->perform_move(move, true, false);
-  }
-  for(auto &move :  boost::adaptors::reverse(moves_from_goal))
-  {
+    }
+    for(auto &move :  boost::adaptors::reverse(moves_from_goal))
+    {
       this->board->perform_move(move, false, false);
-  }
-  move *last_move = nullptr;
-  if(moves_from_goal.size())
-    last_move = &moves_from_goal.front();
-  else
-    last_move = &moves_from_init.back();
+    }
+    Move_Direction *last_move_dir = nullptr;
+    Move_Direction none_move = Move_Direction::none;
+    if(moves_from_goal.size())
+    last_move_dir = &moves_from_goal.front().first;
+    else
+    {
+    //We have not performed a forward move, which means that the player might not be at the correct position
+    //This will make problems for out move cost calculation
+    //We replay the last move.
+    //We can however not do this if the goal has no parent node, i.e., it was the initial start position.
+    //If that is the case, just magically transport the player to the correct position, which was saved before
+    //Manipulating the board.
+    if(goal_entry->parent_entry == nullptr)
+    {
+        //This is the genisis node, automagically move player to the correct box.
+        this->board->initial_player_box->change_types_in_move(*this->board->player_box, *this->board->initial_player_box);
+        last_move_dir = &none_move;
+    }
+    else
+    {
+        //Replay last move
+        this->board->perform_move(goal_entry->parent_entry->last_move, true, false);
+        this->board->perform_move(goal_entry->parent_entry->last_move, false, false);
+        last_move_dir = &goal_entry->parent_entry->last_move.first;
+    }
 
-  this->board->calc_reachable(last_move->first);
- // std::cout << ttable.get_entry(*board, board->upper_left_reachable->pos )->full_key << "\t" << goal_entry->full_key << std::endl;
 
+    this->board->calc_reachable(*last_move_dir);
+    // std::cout << ttable.get_entry(*board, board->upper_left_reachable->pos )->full_key << "\t" << goal_entry->full_key << std::endl;
+
+    }
 }
 
 std::vector<move> Solver::get_path_to_state(state_entry *state)

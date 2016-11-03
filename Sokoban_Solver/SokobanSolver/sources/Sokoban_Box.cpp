@@ -30,7 +30,6 @@ Move_Direction get_reverse_direction(Move_Direction dir)
 }
 
 
-
 Sokoban_Box::Sokoban_Box(Box_Type _type, Position _pos)
 {
     this->type = _type;

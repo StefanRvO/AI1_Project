@@ -210,6 +210,7 @@ void Sokoban_Board::populate_neighbours()
                 this->goals.push_back(&this->board[x][y]);
         }
     }
+    this->initial_player_box = this->player_box;
 }
 
 
@@ -313,7 +314,7 @@ bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
         return true;
     return false;
 }
-/*
+
 void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
 {
     //std::cout << "Calculated reachable" << std::endl;
@@ -360,7 +361,7 @@ void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
         calc_reachable_helper(top->nb_left, top, MOVE_COST, Move_Direction::left);
         calc_reachable_helper(top->nb_right, top, MOVE_COST, Move_Direction::right);
     }
-}*/
+}
 
 void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current,
     float edge_cost, Move_Direction move_dir)
@@ -445,7 +446,7 @@ float Sokoban_Board::get_move_cost(move the_move)
     float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir);
     return push_turn_cost + start_push_cost + MOVE_COST;
 }
-
+/*
 void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_move_dir)
 {
     this->upper_left_reachable = this->player_box;
@@ -474,3 +475,4 @@ void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box)
         this->calc_reachable_rec(box->nb_right);
 
 }
+*/
