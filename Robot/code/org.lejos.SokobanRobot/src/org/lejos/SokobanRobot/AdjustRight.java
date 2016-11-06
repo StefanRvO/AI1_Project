@@ -35,7 +35,7 @@ public class AdjustRight  implements Behavior {
         MotorL.forward();
         MotorR.forward();
         MotorL.setSpeed((int)MotorL.getMaxSpeed());
-        MotorR.setSpeed((int)(MotorL.getMaxSpeed() * 0.9));
+        MotorR.setSpeed((int)(MotorL.getMaxSpeed() * 0.7));
         try
         {
             Thread.sleep(5);

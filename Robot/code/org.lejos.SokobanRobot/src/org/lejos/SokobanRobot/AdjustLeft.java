@@ -34,7 +34,7 @@ public class AdjustLeft  implements Behavior {
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed((int)(MotorL.getMaxSpeed() * 0.9));
+        MotorL.setSpeed((int)(MotorL.getMaxSpeed() * 0.7));
         MotorR.setSpeed((int)MotorL.getMaxSpeed());
         try
         {
