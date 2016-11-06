@@ -39,6 +39,8 @@ enum Move_Direction
     right,
     none,
 };
+
+unsigned char get_direction_char(Move_Direction &dir);
 Move_Direction get_reverse_direction(Move_Direction dir);
 
 
@@ -47,6 +49,7 @@ class Sokoban_Box;
 
 typedef std::pair<Move_Direction, Sokoban_Box *> move;
 
+std::ostream& operator<<(std::ostream& os, const move& the_move);
 
 class Sokoban_Box
 {
@@ -116,5 +119,4 @@ class Sokoban_Box
             }
             return first->cost_to_box < second->cost_to_box;
         }
-
 };

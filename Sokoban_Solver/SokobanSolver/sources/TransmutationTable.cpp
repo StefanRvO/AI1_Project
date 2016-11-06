@@ -24,7 +24,7 @@ void TransmutationTable::clear()
 }
 
 
-bool TransmutationTable::check_table(const Sokoban_Board &board, const Position &upper_left, uint32_t cost_to_state, int32_t *heuristic,
+bool TransmutationTable::check_table(const Sokoban_Board &board, uint32_t cost_to_state, int32_t *heuristic,
     move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node)
 
 {
@@ -32,7 +32,7 @@ bool TransmutationTable::check_table(const Sokoban_Board &board, const Position 
     //if(table_checks++ % 10000 == 0)std::cout << table_checks  <<std::endl;
 
     //Calculate the full key
-    key_type full_key = state_entry::create_full_key(board, upper_left);
+    key_type full_key = state_entry::create_full_key(board);
     //std::cout << full_key << std::endl;
     //Check if the entry exists
     bucket *the_bucket = this->table +(size_t)(full_key % this->table_size);
@@ -97,8 +97,8 @@ state_entry *TransmutationTable::get_random_entry()
     return nullptr;
 }
 
-state_entry *TransmutationTable::get_entry(const Sokoban_Board &board, const Position &upper_left)
+state_entry *TransmutationTable::get_entry(const Sokoban_Board &board)
 {
-    key_type full_key = state_entry::create_full_key(board, upper_left);
+    key_type full_key = state_entry::create_full_key(board);
     return this->get_entry(full_key);
 }

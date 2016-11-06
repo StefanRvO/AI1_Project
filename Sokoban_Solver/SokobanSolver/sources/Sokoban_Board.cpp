@@ -6,14 +6,19 @@
 #include <random>
 #include <cstdint>
 #include <limits>
+#include <algorithm>
+#include <boost/range/adaptor/reversed.hpp>
+#include <cctype>
+
+
 //Cost added to specific move type
-#define LEFT_COST 1.5
-#define RIGHT_COST 1.3
-#define FORWARD_COST 1.1
+#define LEFT_COST 1.55
+#define RIGHT_COST 1.35
+#define FORWARD_COST 1.15
 #define BACKWARD_COST 100 //This would be stupid
 
 #define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 4. //Cost for pushing a box(added to the above moves)
+#define PUSH_COST 400. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {
@@ -352,6 +357,7 @@ void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
             break;
         reachable_open_list.erase(top_itt);
         top->closed = true;
+        //std::cout << *top << std::endl;
         if(top->is_solid())
             continue;
         if(upper_left_reachable->pos < top->pos) upper_left_reachable = top;
@@ -394,6 +400,10 @@ void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *c
             neighbour->cost_to_box = new_distance;
             neighbour->parent_node = current;
             neighbour->move_dir = move_dir;
+            /*
+            Position check_pos = {1,2};
+            if(current->pos.x_pos == check_pos.x_pos && current->pos.y_pos == check_pos.y_pos)
+                std::cout << "Set parent node for " << *neighbour << std::endl;*/
             reachable_open_list.erase(itt);
             //std::cout << reachable_open_list.size() << std::endl;
             reachable_open_list.insert(neighbour);
@@ -446,6 +456,73 @@ float Sokoban_Board::get_move_cost(move the_move)
     float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir);
     return push_turn_cost + start_push_cost + MOVE_COST;
 }
+
+
+std::vector<move> Sokoban_Board::get_player_moves(const std::vector<move> &box_moves)
+{   //Accepts a vector containing box pushes, and return player moves
+    //The board must be in the state where all the the moves will be legal in the given order.
+    //The board state will be altered to be in the state after the last move.
+    //Will recover the board.
+
+    std::vector<move> player_moves;
+    for(auto &the_move : box_moves)
+    {
+        //std::cout << the_move << std::endl;
+        auto player_moves_single_push = this->get_player_moves(the_move);
+        //for(auto &the_player_move : player_moves_single_push)
+        //    std::cout << "\t\t" << the_player_move << std::endl;
+        player_moves.insert(player_moves.end(),
+            player_moves_single_push.begin(), player_moves_single_push.end());
+        this->perform_move(the_move, false, true);
+    }
+
+    return player_moves;
+}
+
+std::vector<move> Sokoban_Board::get_player_moves(const move &box_move)
+{   //Return player moves which needs to be done to perform the given box push
+    //The board must be in a state where the given move is legal
+
+    std::vector<move> moves;
+
+    Sokoban_Box *cur_box = box_move.second; //the box with the barel on, will be the player box at the end.
+    moves.push_back(box_move);
+    cur_box = cur_box->get_neighbour(get_reverse_direction(box_move.first));
+    while(cur_box->parent_node != nullptr)
+    {
+        moves.push_back(move(cur_box->move_dir, cur_box));
+        cur_box = cur_box->parent_node;
+    }
+    std::reverse(moves.begin(), moves.end());
+    return moves;
+}
+
+std::string Sokoban_Board::get_move_string(const std::vector<move> &moves)
+{   //Return a string representing the given moves in the standard format:
+    //"u, d, l, r for player moves, U, D, L, R for box pushes"
+    //The given moves must be legal from this board state
+    //The board state will be altered so it will be in the state after the first move.
+    //Will recover the board.
+    std::string move_str = "";
+    //std::vector<move> box_pushes;
+    for(auto the_move: moves)
+    {
+        unsigned char move_char = get_direction_char(the_move.first);
+        std::cout << move_char << *the_move.second << std::endl;
+        if(the_move.second->is_solid())
+        {
+            std::cout << *the_move.second << std::endl;
+            move_str += std::toupper(move_char);
+            perform_move(the_move, false, true);
+            std::cout << "moved" << std::endl;
+        }
+        else
+            move_str += move_char;
+    }
+    return move_str;
+}
+
+
 /*
 void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_move_dir)
 {

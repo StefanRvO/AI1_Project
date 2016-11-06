@@ -56,7 +56,7 @@ struct state_entry
 
     uint32_t total_moves = 0; //Total number of moves performed to this state. Also used for tree traversal
 
-    static key_type create_full_key(const Sokoban_Board &board, __attribute__((unused)) const Position &upper_left)
+    static key_type create_full_key(const Sokoban_Board &board)
     {
         key_type key = 0;
         for(auto &_box : board.board_boxes)
@@ -125,7 +125,7 @@ class TransmutationTable
     state_entry *get_random_entry();                    //Return a random entry.
                                                        //Make sure that the table is not empty,
                                                        //or this will run forever.
-    state_entry *get_entry(const Sokoban_Board &board, const Position &upper_left);
+    state_entry *get_entry(const Sokoban_Board &board);
 
     //check if this state already exists in the table.
     //If it exists, and the saved state has a lower cost than the given cost, return false, meaning
@@ -133,6 +133,6 @@ class TransmutationTable
     //If it exists, and the saved state has a higher cost, owerwrite the saved cost with the new,
     //And return true. Replace the value pointed to by heuristic with the saved heuristic.
     //If it does not exist, return true, calculate a new heuristic and put it in the memory given in the pointer.
-    bool check_table(const Sokoban_Board &board, const Position &upper_left, uint32_t cost_to_state, int32_t *heuristic,
+    bool check_table(const Sokoban_Board &board, uint32_t cost_to_state, int32_t *heuristic,
         move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node);
 };

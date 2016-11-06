@@ -6,11 +6,6 @@
 
 
 
-std::ostream& operator<<(std::ostream& os, const move& the_move)
-{
-    os << "Move: (Dir:" << the_move.first << ", "<< *the_move.second << ")";
-    return os;
-}
 
 Solver::Solver(Sokoban_Board *_board)
 : ttable(1000003)
@@ -20,7 +15,6 @@ Solver::Solver(Sokoban_Board *_board)
 
 bool Solver::solve()
 {
-
     auto dead_fields = DeadLockDetector::get_static_deadlock_boxes(*this->board);
     //std::cout << dead_fields.size() << std::endl;
     //std::cout << *this->board << std::endl;
@@ -36,52 +30,65 @@ bool Solver::solve()
             default: break;
         }
     }
-    this->board->calc_reachable(Move_Direction::none);
-    std::cout << *this->board << std::endl;
-    for (auto &the_move : this->board->find_possible_moves())
-    {
-        std::cout << the_move << "\t" << this->board->get_move_cost(the_move) << std::endl;
-    }
-    std::cout << this->board->get_board_str(true);
-    //return false;
+    std::cout << this->board->get_board_str(true) << std::endl;
+    /*std::cout << *this->board->player_box << std::endl;
+    std::cout << "player box " << *this->board->player_box << std::endl;*/
 
-    //__attribute__((unused)) int32_t solve_result = this->IDA_star_solve();
-    state_entry *goal_entry = A_star_solve();
-    std::cout << "Solved\t" << goal_entry << std::endl;
+    /*move test_move = {Move_Direction::left, &this->board->board[8][4]};
+
+    //this->board->perform_move(test_move, false, false);
+    std::cout << *this->board->player_box << std::endl;
+    std::cout << *this->board << std::endl;
+    */
+
+    this->board->calc_reachable(Move_Direction::none);
+    __attribute__((unused))state_entry *goal_entry = A_star_solve();
+    std::cout << "Solved" << std::endl;
     std::cout << *this->board << std::endl;
     auto moves = this->get_path_to_state(goal_entry);
+    std::cout << moves.size() << std::endl;
+    this->go_too_root_state();
+    /*std::cout << *this->board << std::endl;
+    this->board->calc_reachable(Move_Direction::none);*/
+    std::cout << *this->board << std::endl;
+
     for(auto &the_move : moves)
+    {
+        //std::cout << "player box " << *this->board->player_box << std::endl;
+        std::cout << the_move << std::endl;
+        //this->board->perform_move(the_move);
+    }
+
+    std::cout << "Player_moves!" << std::endl;
+    this->board->calc_reachable(Move_Direction::none);
+    auto player_moves = this->board->get_player_moves(moves);
+    std::cout << moves[0] << std::endl;
+    std::cout << player_moves.size() << std::endl;
+    for(auto &the_move : player_moves)
     {
         std::cout << the_move << std::endl;
     }
-    std::cout << moves.size() << std::endl;
-    //Go to random state
-    state_entry *random_state1 = this->ttable.get_random_entry();
-    state_entry *random_state2 = this->ttable.get_random_entry();
-
-    //std::cout << random_state;
-    state_entry *this_state = this->ttable.get_entry(*this->board, this->board->upper_left_reachable->pos);
-    std::cout << this_state << std::endl;
-    std::cout << random_state1 << std::endl;
-    std::cout << random_state2 << std::endl;
-    go_to_state(this_state, random_state2);
+    this->go_too_root_state();
     this->board->calc_reachable(Move_Direction::none);
-    this_state = this->ttable.get_entry(*this->board, this->board->upper_left_reachable->pos);
-    std::cout << this_state << std::endl;
-    //if(solve_result < 0) return false;
-    //std::cout << "Solved in " << solve_result << " steps." << std::endl;
+
+    std::cout << *this->board << std::endl;
+    std::cout << this->board->get_move_string(player_moves) << std::endl;
+
+    //{
+    //
+    //}*/
     return true;
 }
 
 state_entry *Solver::A_star_solve()
 {
     //Solve the sokoban puzzle using an A* algorithm
-
+    std::list<float> move_costs;
     //Add initial state to ttable and open list
     move init_move = move(Move_Direction::none, this->board->player_box);
     state_entry *this_entry = nullptr;
     int32_t h = 0;
-    ttable.check_table(*this->board, this->board->upper_left_reachable->pos, 0, &h, init_move, nullptr, 0, this_entry);
+    ttable.check_table(*this->board, 0, &h, init_move, nullptr, 0, this_entry);
     open_list.push(this_entry);
     state_entry *last_entry = this_entry;
     while(open_list.size())
@@ -95,12 +102,18 @@ state_entry *Solver::A_star_solve()
             return node_to_expand;
         //Go to this state
         //Calculate children
-        for (auto &the_move : this->board->find_possible_moves())
+        auto moves = this->board->find_possible_moves();
+        move_costs.clear();
+        for (auto &the_move : moves)
         {
-            int32_t move_cost = 1;
+            move_costs.push_back(this->board->get_move_cost(the_move));
+        }
+        for (auto &the_move : moves)
+        {
+            float move_cost = move_costs.front();
+            move_costs.pop_front();
             this->board->perform_move(the_move, false, true);
-            if( ttable.check_table(*this->board, this->board->upper_left_reachable->pos,
-                node_to_expand->cost_to_state + move_cost, &h, the_move,
+            if( ttable.check_table(*this->board,node_to_expand->cost_to_state + move_cost, &h, the_move,
                 node_to_expand, node_to_expand->total_moves + 1, this_entry) == false)
             {
                 this->board->perform_move(the_move, true, false);
@@ -137,7 +150,7 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, __attribut
     state_entry *this_entry = nullptr;
     //std::cout << parent_node << std::endl;
     //std::cout << depth << std::endl;
-    if(ttable.check_table(*this->board, this->board->upper_left_reachable->pos, g, &h, last_move, parent_node, depth, this_entry) == false)
+    if(ttable.check_table(*this->board, g, &h, last_move, parent_node, depth, this_entry) == false)
     {
 //        std::cout << h << "\tFalse!" << std::endl;
         return -1;
@@ -206,7 +219,8 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
     Move_Direction *last_move_dir = nullptr;
     Move_Direction none_move = Move_Direction::none;
     if(moves_from_goal.size())
-    last_move_dir = &moves_from_goal.front().first;
+        last_move_dir = &moves_from_goal.front().first;
+
     else
     {
     //We have not performed a forward move, which means that the player might not be at the correct position
@@ -219,6 +233,7 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
     {
         //This is the genisis node, automagically move player to the correct box.
         this->board->initial_player_box->change_types_in_move(*this->board->player_box, *this->board->initial_player_box);
+        this->board->player_box = this->board->initial_player_box;
         last_move_dir = &none_move;
     }
     else
@@ -231,7 +246,7 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
 
 
     this->board->calc_reachable(*last_move_dir);
-    // std::cout << ttable.get_entry(*board, board->upper_left_reachable->pos )->full_key << "\t" << goal_entry->full_key << std::endl;
+    // std::cout << ttable.get_entry(*board)->full_key << "\t" << goal_entry->full_key << std::endl;
 
     }
 }
@@ -246,4 +261,15 @@ std::vector<move> Solver::get_path_to_state(state_entry *state)
     }
     reverse(moves.begin(), moves.end());
     return moves;
+}
+
+void Solver::go_too_root_state()
+{
+    state_entry *this_state = this->ttable.get_entry(*this->board);
+    state_entry *init_state = this_state;
+    while(this_state->parent_entry != nullptr)
+    {
+        this_state = this_state->parent_entry;
+    }
+    this->go_to_state(init_state, this_state);
 }

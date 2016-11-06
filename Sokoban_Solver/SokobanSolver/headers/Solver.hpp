@@ -22,6 +22,6 @@ class Solver
         int32_t IDA_search(uint32_t depth, uint32_t g, int32_t bound, state_entry *parent_node, move &last_move);
         void go_to_state(state_entry *init_entry, state_entry *goal_entry);
         std::vector<move> get_path_to_state(state_entry *state);
-
+        void go_too_root_state();
 
 };

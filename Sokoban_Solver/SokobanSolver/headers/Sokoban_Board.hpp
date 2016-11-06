@@ -86,4 +86,8 @@ class Sokoban_Board
         float get_move_cost(move the_move); //Returns the move cost based on the reachable map.
         float get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir);
         void calc_reachable_rec(Sokoban_Box *box);
+        std::vector<move> get_player_moves(const std::vector<move> &box_moves);
+        std::vector<move> get_player_moves(const move &box_move);
+        std::string get_move_string(const std::vector<move> &moves);
+
 };

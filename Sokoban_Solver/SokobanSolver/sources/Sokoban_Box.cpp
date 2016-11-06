@@ -15,6 +15,13 @@ bool operator<(const Position &pos1, const Position &pos2)
 
 }
 
+std::ostream& operator<<(std::ostream& os, const move& the_move)
+{
+    os << "Move: (Dir:" << the_move.first << ", "<< *the_move.second << ")";
+    return os;
+}
+
+
 Move_Direction get_reverse_direction(Move_Direction dir)
 {
     switch (dir) {
@@ -28,6 +35,21 @@ Move_Direction get_reverse_direction(Move_Direction dir)
     assert(false);
     return left;
 }
+
+unsigned char get_direction_char(Move_Direction &dir)
+{
+    switch(dir)
+    {
+        case up:    return 'u';
+        case down:  return 'd';
+        case left:  return 'l';
+        case right: return 'r';
+        case none:  return '-';
+    }
+    assert(false);
+    return ' ';
+}
+
 
 
 Sokoban_Box::Sokoban_Box(Box_Type _type, Position _pos)
@@ -95,7 +117,7 @@ void Sokoban_Box::change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_bo
             break;
         default:
             std::cout << old_box.type << std::endl;
-            std::cout << old_box.pos.y_pos << " " << old_box.pos.x_pos << std::endl << std::endl;
+            std::cout << old_box.pos.x_pos << " " << old_box.pos.y_pos << std::endl << std::endl;
             assert(false);
     }
 }
@@ -128,17 +150,21 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
     //First move the player, as the box may be moved to the player position.
     if(player_box != nullptr and player_box != new_player_pos)
         Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
+    //std::cout << "test" << std::endl;
     if(reverse)
         Sokoban_Box::change_types_in_move(*new_pos, *move_box);
     else
         Sokoban_Box::change_types_in_move(*move_box, *new_pos);
+    //std::cout << "test2" << std::endl;
 
     if(!reverse) move_box = new_pos;
     player_box = new_player_pos;
     //If we aren't reversing, and want to move the player, move the player one up now!
     if(!reverse && player_box != nullptr)
     {
+        //std::cout << "test3" << std::endl;
         Sokoban_Box::change_types_in_move(*player_box, *player_box->get_neighbour(dir));
+        //std::cout << "test4" << std::endl;
         player_box = player_box->get_neighbour(dir);
     }
 }
