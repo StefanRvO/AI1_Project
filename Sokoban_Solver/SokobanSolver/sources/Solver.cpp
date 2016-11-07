@@ -30,7 +30,7 @@ bool Solver::solve()
             default: break;
         }
     }
-    std::cout << this->board->get_board_str(true) << std::endl;
+    //std::cout << this->board->get_board_str(true) << std::endl;
     /*std::cout << *this->board->player_box << std::endl;
     std::cout << "player box " << *this->board->player_box << std::endl;*/
 
@@ -42,7 +42,7 @@ bool Solver::solve()
     */
 
     this->board->calc_reachable(Move_Direction::none);
-    std::cout << this->board->get_reachable_map() << std::endl;
+    //std::cout << this->board->get_reachable_map() << std::endl;
     __attribute__((unused))state_entry *goal_entry = A_star_solve();
     std::cout << "Solved" << std::endl;
     std::cout << *this->board << std::endl;
@@ -51,34 +51,31 @@ bool Solver::solve()
     this->go_too_root_state();
     /*std::cout << *this->board << std::endl;
     this->board->calc_reachable(Move_Direction::none);*/
-    std::cout << *this->board << std::endl;
-    std::cout << this->board->get_reachable_map() << std::endl;
+    //std::cout << *this->board << std::endl;
+    //std::cout << this->board->get_reachable_map() << std::endl;
 
     for(auto &the_move : moves)
     {
         std::cout << the_move << std::endl;
-        this->board->perform_move(the_move, false, true);
+        /*this->board->perform_move(the_move, false, true);
         std::cout << *this->board << std::endl;
-        std::cout << this->board->get_reachable_map() << std::endl;
-
-
+        std::cout << this->board->get_reachable_map() << std::endl;*/
     }
 
-    /*std::cout << "Player_moves!" << std::endl;
+    //std::cout << "Player_moves!" << std::endl;
     this->board->calc_reachable(Move_Direction::none);
     auto player_moves = this->board->get_player_moves(moves);
-    std::cout << moves[0] << std::endl;
+    //std::cout << moves[0] << std::endl;
     std::cout << player_moves.size() << std::endl;
-    for(auto &the_move : player_moves)
-    {
-        std::cout << the_move << std::endl;
-    }
+    //for(auto &the_move : player_moves)
+    //{
+    //    std::cout << the_move << std::endl;
+    //}
     this->go_too_root_state();
     this->board->calc_reachable(Move_Direction::none);
 
-    std::cout << *this->board << std::endl;
+    //std::cout << *this->board << std::endl;
     std::cout << this->board->get_move_string(player_moves) << std::endl;
-    */
     //{
     //
     //}*/
@@ -107,16 +104,17 @@ state_entry *Solver::A_star_solve()
             return node_to_expand;
         //Go to this state
         //Calculate children
+        this->board->calc_reachable(node_to_expand->last_move.first);
         auto moves = this->board->find_possible_moves();
         move_costs.clear();
-        /*for (__attribute__((unused)) auto &the_move : moves)
+        for (__attribute__((unused)) auto &the_move : moves)
         {
-            move_costs.push_back( 1 this->board->get_move_cost(the_move));
-        }*/
+            move_costs.push_back(this->board->get_move_cost(the_move));
+        }
         for (auto &the_move : moves)
         {
-            float move_cost = 1; //move_costs.front();
-            //move_costs.pop_front();
+            float move_cost = move_costs.front();
+            move_costs.pop_front();
             this->board->perform_move(the_move, false, true);
             if( ttable.check_table(*this->board,node_to_expand->cost_to_state + move_cost, &h, the_move,
                 node_to_expand, node_to_expand->total_moves + 1, this_entry) == false)
@@ -190,7 +188,10 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, __attribut
 void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
 {   //Travel the tree from the init entry to the goal entry by traversing the tree saved in the transmutation table.
     //Create a vector for saving the needed moves
-    if(init_entry == goal_entry) return;
+    if(init_entry == goal_entry)
+    {
+        return;
+    }
     std::vector<move> moves_from_init;
     std::vector<move> moves_from_goal;
     //Loop while full_key is not the same (we are not in the same state!)
@@ -221,13 +222,7 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
     {
       this->board->perform_move(move, false, false);
     }
-    Move_Direction *last_move_dir = nullptr;
-    Move_Direction none_move = Move_Direction::none;
-    if(moves_from_goal.size())
-    {
-        last_move_dir = &moves_from_goal.front().first;
-    }
-    else
+    if(moves_from_goal.size() == 0)
     {
         //We have not performed a forward move, which means that the player might not be at the correct position
         //This will make problems for out move cost calculation
@@ -240,7 +235,6 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
             //This is the genisis node, automagically move player to the correct box.
             this->board->initial_player_box->change_types_in_move(*this->board->player_box, *this->board->initial_player_box);
             this->board->player_box = this->board->initial_player_box;
-            last_move_dir = &none_move;
         }
         else
         {
@@ -256,13 +250,9 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
             /*std::cout << "test3" << std::endl;
             std::cout << *this->board << std::endl;
             std::cout << goal_entry->last_move << std::endl;*/
-
-
-            last_move_dir = &goal_entry->last_move.first;
         }
     }
 
-    this->board->calc_reachable(*last_move_dir);
     // std::cout << ttable.get_entry(*board)->full_key << "\t" << goal_entry->full_key << std::endl;
 }
 

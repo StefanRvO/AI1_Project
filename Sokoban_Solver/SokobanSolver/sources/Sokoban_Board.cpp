@@ -13,13 +13,13 @@
 
 
 //Cost added to specific move type
-#define LEFT_COST 1.55
-#define RIGHT_COST 1.35
-#define FORWARD_COST 1.15
-#define BACKWARD_COST 100 //This would be stupid
+#define LEFT_COST 1
+#define RIGHT_COST 1
+#define FORWARD_COST 1
+#define BACKWARD_COST 1 //This would be stupid
 
 #define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 400. //Cost for pushing a box(added to the above moves)
+#define PUSH_COST 4. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {
@@ -288,8 +288,8 @@ int32_t Sokoban_Board::get_heuristic()
     /*static uint32_t calls = 0;
     if(calls++ % 100 == 0) std::cout << calls << std::endl;*/
     //return 1;
-    __attribute__((unused)) int64_t rand_num = rand_gen(gen);
     int32_t h_cost = 0;
+    uint32_t min_distance_player = 0xFFFFFFFF;
     for(auto &box_pair : this->board_boxes)
     {
         auto &box = box_pair.first;
@@ -297,6 +297,10 @@ int32_t Sokoban_Board::get_heuristic()
         //    if(box->type != Goal_Box)
         //        return -1;
         if(box->type == Goal_Box) continue;
+        uint32_t player_dist = abs((int32_t)box->pos.x_pos - (int32_t)player_box->pos.x_pos) +
+            abs((int32_t)box->pos.y_pos - (int32_t)player_box->pos.y_pos) * MOVE_COST;
+        min_distance_player = std::min(min_distance_player, player_dist);
+
         uint32_t min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
         {
@@ -310,11 +314,12 @@ int32_t Sokoban_Board::get_heuristic()
                 break;
             }
             uint32_t dist = abs((int32_t)box->pos.x_pos - (int32_t)goal->pos.x_pos) +
-                abs((int32_t)box->pos.y_pos - (int32_t)goal->pos.y_pos);
+                abs((int32_t)box->pos.y_pos - (int32_t)goal->pos.y_pos) * PUSH_COST;
             min_distance = std::min(min_distance, dist);
         }
         h_cost += min_distance;
     }
+    //h_cost += min_distance_player
     return h_cost;
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
@@ -512,13 +517,13 @@ std::string Sokoban_Board::get_move_string(const std::vector<move> &moves)
     for(auto the_move: moves)
     {
         unsigned char move_char = get_direction_char(the_move.first);
-        std::cout << move_char << *the_move.second << std::endl;
+        //std::cout << move_char << *the_move.second << std::endl;
         if(the_move.second->is_solid())
         {
-            std::cout << *the_move.second << std::endl;
+            //std::cout << *the_move.second << std::endl;
             move_str += std::toupper(move_char);
             perform_move(the_move, false, true);
-            std::cout << "moved" << std::endl;
+            //std::cout << "moved" << std::endl;
         }
         else
             move_str += move_char;
@@ -540,10 +545,6 @@ std::string Sokoban_Board::get_reachable_map()
         }
         board_str += row_str;
         board_str += "\n";
-    }
-    for(uint32_t x = 0; x < this->size_x; x++)
-    {
-
     }
     return board_str;
 }
