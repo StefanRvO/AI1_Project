@@ -115,7 +115,7 @@ state_entry *Solver::A_star_solve()
         {
             float move_cost = move_costs.front();
             move_costs.pop_front();
-            this->board->perform_move(the_move, false, true);
+            this->board->perform_move(the_move, false, false);
             if( ttable.check_table(*this->board,node_to_expand->cost_to_state + move_cost, &h, the_move,
                 node_to_expand, node_to_expand->total_moves + 1, this_entry) == false)
             {
@@ -192,8 +192,8 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
     {
         return;
     }
-    std::vector<move> moves_from_init;
-    std::vector<move> moves_from_goal;
+    moves_from_init.clear();
+    moves_from_goal.clear();
     //Loop while full_key is not the same (we are not in the same state!)
     while(init_entry->full_key != goal_entry->full_key)
     {

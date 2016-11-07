@@ -33,7 +33,7 @@ struct state_entry
     key_type full_key; //The full board state. The state contains the position of every box (12 bit per box, limiting the size of the map to 64*64).
                             //The last position is the uppermose, leftmost, position reachable by the player. This means,
                             //That we will be able to hash states which is not excatly equal, as the player position may be different, and match it to the same state.
-    uint32_t cost_to_state;
+    float cost_to_state;
     int32_t heuristic;
 
     //These fields are used for tree traversal to get from one state to another.
@@ -82,8 +82,8 @@ struct state_entry
             return false;
         if(first->heuristic < 0)
             return true;
-        uint32_t cost_estimate_1 = first->cost_to_state + first->heuristic;
-        uint32_t cost_estimate_2 = second->cost_to_state + second->heuristic;
+        float cost_estimate_1 = first->cost_to_state + first->heuristic;
+        float cost_estimate_2 = second->cost_to_state + second->heuristic;
         return cost_estimate_1 > cost_estimate_2;
     }
 };
@@ -92,7 +92,7 @@ struct bucket
 {
     std::list<state_entry> entries;
 
-    int32_t insert_entry(key_type _full_key, uint32_t _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
+    int32_t insert_entry(key_type _full_key, float _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
     {
         //static uint32_t insertions = 0;
         //std::cout << insertions++ << "\t" << _full_key % 1000003 <<std::endl;
@@ -133,6 +133,6 @@ class TransmutationTable
     //If it exists, and the saved state has a higher cost, owerwrite the saved cost with the new,
     //And return true. Replace the value pointed to by heuristic with the saved heuristic.
     //If it does not exist, return true, calculate a new heuristic and put it in the memory given in the pointer.
-    bool check_table(const Sokoban_Board &board, uint32_t cost_to_state, int32_t *heuristic,
+    bool check_table(const Sokoban_Board &board, float cost_to_state, int32_t *heuristic,
         move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node);
 };

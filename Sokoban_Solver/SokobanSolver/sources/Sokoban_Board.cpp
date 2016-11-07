@@ -13,10 +13,10 @@
 
 
 //Cost added to specific move type
-#define LEFT_COST 1
-#define RIGHT_COST 1
-#define FORWARD_COST 1
-#define BACKWARD_COST 1 //This would be stupid
+#define LEFT_COST 1.
+#define RIGHT_COST 1.
+#define FORWARD_COST 1.
+#define BACKWARD_COST 1. //This would be stupid
 
 #define MOVE_COST 1. //Cost added to all move types
 #define PUSH_COST 4. //Cost for pushing a box(added to the above moves)
@@ -289,7 +289,6 @@ int32_t Sokoban_Board::get_heuristic()
     if(calls++ % 100 == 0) std::cout << calls << std::endl;*/
     //return 1;
     int32_t h_cost = 0;
-    uint32_t min_distance_player = 0xFFFFFFFF;
     for(auto &box_pair : this->board_boxes)
     {
         auto &box = box_pair.first;
@@ -297,9 +296,6 @@ int32_t Sokoban_Board::get_heuristic()
         //    if(box->type != Goal_Box)
         //        return -1;
         if(box->type == Goal_Box) continue;
-        uint32_t player_dist = abs((int32_t)box->pos.x_pos - (int32_t)player_box->pos.x_pos) +
-            abs((int32_t)box->pos.y_pos - (int32_t)player_box->pos.y_pos) * MOVE_COST;
-        min_distance_player = std::min(min_distance_player, player_dist);
 
         uint32_t min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
@@ -314,12 +310,12 @@ int32_t Sokoban_Board::get_heuristic()
                 break;
             }
             uint32_t dist = abs((int32_t)box->pos.x_pos - (int32_t)goal->pos.x_pos) +
-                abs((int32_t)box->pos.y_pos - (int32_t)goal->pos.y_pos) * PUSH_COST;
+                abs((int32_t)box->pos.y_pos - (int32_t)goal->pos.y_pos) * (PUSH_COST + MOVE_COST +
+                    std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
             min_distance = std::min(min_distance, dist);
         }
         h_cost += min_distance;
     }
-    //h_cost += min_distance_player
     return h_cost;
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
@@ -462,7 +458,7 @@ float Sokoban_Board::get_move_cost(move the_move)
     Sokoban_Box *player_start_push_box = box->get_neighbour(get_reverse_direction(dir));
     float start_push_cost = player_start_push_box->cost_to_box;
     //Get the cost of pushing the box(simply turn direction cost)
-    float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir);
+    float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir) + MOVE_COST;
     return push_turn_cost + start_push_cost + MOVE_COST;
 }
 

@@ -15,6 +15,8 @@ class Solver
     private:
         std::priority_queue<state_entry *, std::vector<state_entry *>, state_entry> open_list;
         TransmutationTable ttable;
+        std::vector<move> moves_from_init;
+        std::vector<move> moves_from_goal;
 
         Sokoban_Board *board = nullptr;
         state_entry *A_star_solve();
