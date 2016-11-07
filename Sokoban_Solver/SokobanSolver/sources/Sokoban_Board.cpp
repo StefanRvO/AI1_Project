@@ -16,10 +16,10 @@
 #define LEFT_COST 1.
 #define RIGHT_COST 1.
 #define FORWARD_COST 1.
-#define BACKWARD_COST 1. //This would be stupid
+#define BACKWARD_COST 1.
 
 #define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 4. //Cost for pushing a box(added to the above moves)
+#define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {

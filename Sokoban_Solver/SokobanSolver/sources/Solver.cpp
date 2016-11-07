@@ -104,6 +104,7 @@ state_entry *Solver::A_star_solve()
             return node_to_expand;
         //Go to this state
         //Calculate children
+        //if(node_to_expand->heuristic > 20) std::cout << node_to_expand->heuristic << std::endl;
         this->board->calc_reachable(node_to_expand->last_move.first);
         auto moves = this->board->find_possible_moves();
         move_costs.clear();
