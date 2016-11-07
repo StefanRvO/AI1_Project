@@ -42,6 +42,7 @@ bool Solver::solve()
     */
 
     this->board->calc_reachable(Move_Direction::none);
+    std::cout << this->board->get_reachable_map() << std::endl;
     __attribute__((unused))state_entry *goal_entry = A_star_solve();
     std::cout << "Solved" << std::endl;
     std::cout << *this->board << std::endl;
@@ -51,15 +52,19 @@ bool Solver::solve()
     /*std::cout << *this->board << std::endl;
     this->board->calc_reachable(Move_Direction::none);*/
     std::cout << *this->board << std::endl;
+    std::cout << this->board->get_reachable_map() << std::endl;
 
     for(auto &the_move : moves)
     {
-        //std::cout << "player box " << *this->board->player_box << std::endl;
         std::cout << the_move << std::endl;
-        //this->board->perform_move(the_move);
+        this->board->perform_move(the_move, false, true);
+        std::cout << *this->board << std::endl;
+        std::cout << this->board->get_reachable_map() << std::endl;
+
+
     }
 
-    std::cout << "Player_moves!" << std::endl;
+    /*std::cout << "Player_moves!" << std::endl;
     this->board->calc_reachable(Move_Direction::none);
     auto player_moves = this->board->get_player_moves(moves);
     std::cout << moves[0] << std::endl;
@@ -73,7 +78,7 @@ bool Solver::solve()
 
     std::cout << *this->board << std::endl;
     std::cout << this->board->get_move_string(player_moves) << std::endl;
-
+    */
     //{
     //
     //}*/
@@ -102,16 +107,17 @@ state_entry *Solver::A_star_solve()
             return node_to_expand;
         //Go to this state
         //Calculate children
+        //this->board->calc_reachable(node_to_expand->last_move.first);
         auto moves = this->board->find_possible_moves();
         move_costs.clear();
+        /*for (__attribute__((unused)) auto &the_move : moves)
+        {
+            move_costs.push_back( 1 this->board->get_move_cost(the_move));
+        }*/
         for (auto &the_move : moves)
         {
-            move_costs.push_back(this->board->get_move_cost(the_move));
-        }
-        for (auto &the_move : moves)
-        {
-            float move_cost = move_costs.front();
-            move_costs.pop_front();
+            float move_cost = 1; //move_costs.front();
+            //move_costs.pop_front();
             this->board->perform_move(the_move, false, true);
             if( ttable.check_table(*this->board,node_to_expand->cost_to_state + move_cost, &h, the_move,
                 node_to_expand, node_to_expand->total_moves + 1, this_entry) == false)

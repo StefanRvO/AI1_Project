@@ -89,5 +89,7 @@ class Sokoban_Board
         std::vector<move> get_player_moves(const std::vector<move> &box_moves);
         std::vector<move> get_player_moves(const move &box_move);
         std::string get_move_string(const std::vector<move> &moves);
+        std::string get_reachable_map();
+        std::string get_reachable_str(const Sokoban_Box &box);
 
 };

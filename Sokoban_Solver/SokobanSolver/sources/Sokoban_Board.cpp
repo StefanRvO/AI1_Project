@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
 #include <cctype>
+#include <cstdio>
 
 
 //Cost added to specific move type
@@ -522,6 +523,31 @@ std::string Sokoban_Board::get_move_string(const std::vector<move> &moves)
     return move_str;
 }
 
+std::string Sokoban_Board::get_reachable_map()
+{ //return a string representing the "reachable" map
+    std::string board_str = "";
+    for(uint32_t y = 0; y < this->size_y; y++)
+    {
+
+        std::string row_str;
+        for(uint32_t x = 0; x < this->size_x; x++)
+        {
+            row_str += Sokoban_Board::get_reachable_str(this->board[x][y]) + "\t";
+        }
+        board_str += row_str;
+        board_str += "\n";
+    }
+    return board_str;
+}
+
+std::string Sokoban_Board::get_reachable_str(const Sokoban_Box &box)
+{
+    float cost = box.cost_to_box;
+    if(cost == std::numeric_limits<float>::max()) return std::string("UUUUUU");
+    char formated_string[20];
+    sprintf(formated_string, "%3.2f", cost);
+    return std::string(formated_string);
+}
 
 /*
 void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_move_dir)
