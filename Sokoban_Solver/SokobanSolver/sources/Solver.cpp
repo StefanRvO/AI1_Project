@@ -107,7 +107,6 @@ state_entry *Solver::A_star_solve()
             return node_to_expand;
         //Go to this state
         //Calculate children
-        //this->board->calc_reachable(node_to_expand->last_move.first);
         auto moves = this->board->find_possible_moves();
         move_costs.clear();
         /*for (__attribute__((unused)) auto &the_move : moves)
@@ -225,36 +224,46 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
     Move_Direction *last_move_dir = nullptr;
     Move_Direction none_move = Move_Direction::none;
     if(moves_from_goal.size())
+    {
         last_move_dir = &moves_from_goal.front().first;
-
-    else
-    {
-    //We have not performed a forward move, which means that the player might not be at the correct position
-    //This will make problems for out move cost calculation
-    //We replay the last move.
-    //We can however not do this if the goal has no parent node, i.e., it was the initial start position.
-    //If that is the case, just magically transport the player to the correct position, which was saved before
-    //Manipulating the board.
-    if(goal_entry->parent_entry == nullptr)
-    {
-        //This is the genisis node, automagically move player to the correct box.
-        this->board->initial_player_box->change_types_in_move(*this->board->player_box, *this->board->initial_player_box);
-        this->board->player_box = this->board->initial_player_box;
-        last_move_dir = &none_move;
     }
     else
     {
-        //Replay last move
-        this->board->perform_move(goal_entry->parent_entry->last_move, true, false);
-        this->board->perform_move(goal_entry->parent_entry->last_move, false, false);
-        last_move_dir = &goal_entry->parent_entry->last_move.first;
-    }
+        //We have not performed a forward move, which means that the player might not be at the correct position
+        //This will make problems for out move cost calculation
+        //We replay the last move.
+        //We can however not do this if the goal has no parent node, i.e., it was the initial start position.
+        //If that is the case, just magically transport the player to the correct position, which was saved before
+        //Manipulating the board.
+        if(goal_entry->parent_entry == nullptr)
+        {
+            //This is the genisis node, automagically move player to the correct box.
+            this->board->initial_player_box->change_types_in_move(*this->board->player_box, *this->board->initial_player_box);
+            this->board->player_box = this->board->initial_player_box;
+            last_move_dir = &none_move;
+        }
+        else
+        {
+            //Replay last move
+            /*std::cout << *this->board << std::endl;
+            std::cout << goal_entry->last_move << std::endl;
+            std::cout << *this->board->player_box << std::endl;*/
+            this->board->perform_move(goal_entry->last_move, true, false);
+            /*std::cout << "test2" << std::endl;
+            std::cout << *this->board << std::endl;
+            std::cout << goal_entry->last_move << std::endl;*/
+            this->board->perform_move(goal_entry->last_move, false, false);
+            /*std::cout << "test3" << std::endl;
+            std::cout << *this->board << std::endl;
+            std::cout << goal_entry->last_move << std::endl;*/
 
+
+            last_move_dir = &goal_entry->last_move.first;
+        }
+    }
 
     this->board->calc_reachable(*last_move_dir);
     // std::cout << ttable.get_entry(*board)->full_key << "\t" << goal_entry->full_key << std::endl;
-
-    }
 }
 
 std::vector<move> Solver::get_path_to_state(state_entry *state)

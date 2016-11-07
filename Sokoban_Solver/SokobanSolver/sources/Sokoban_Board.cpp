@@ -262,6 +262,9 @@ void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
         //Perform move
         start_pos = the_move.second->get_neighbour(the_move.first);
         end_pos = the_move.second;
+        /*std::cout << *start_pos << std::endl;
+        std::cout << *end_pos << std::endl;*/
+
         Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
     }
     #ifndef NDEBUG
@@ -529,13 +532,18 @@ std::string Sokoban_Board::get_reachable_map()
     for(uint32_t y = 0; y < this->size_y; y++)
     {
 
-        std::string row_str;
+        std::string row_str = std::to_string(y);
+        row_str += " ";
         for(uint32_t x = 0; x < this->size_x; x++)
         {
-            row_str += Sokoban_Board::get_reachable_str(this->board[x][y]) + "\t";
+            row_str += Sokoban_Board::get_reachable_str(this->board[x][y]) + " ";
         }
         board_str += row_str;
         board_str += "\n";
+    }
+    for(uint32_t x = 0; x < this->size_x; x++)
+    {
+
     }
     return board_str;
 }
