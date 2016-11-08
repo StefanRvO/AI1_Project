@@ -29,7 +29,7 @@ Move_Direction get_reverse_direction(Move_Direction dir)
         case down: return up;
         case left: return right;
         case right: return left;
-        case none: assert(false);
+        case none: return none;
 
     }
     assert(false);
@@ -213,10 +213,11 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir) const
         case down: return this->nb_down;
         case left: return this->nb_left;
         case right: return this->nb_right;
+        case none: return const_cast<Sokoban_Box *> (this);
         default:
             assert(false);
     }
-    return nullptr;
+    return const_cast<Sokoban_Box *> (this);
 }
 
 bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2)

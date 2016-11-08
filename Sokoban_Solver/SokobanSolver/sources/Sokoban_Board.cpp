@@ -11,17 +11,20 @@
 #include <cctype>
 #include <cstdio>
 #include "DeadLockDetector.hpp"
-
+extern "C"
+{
+    #include "hungarian.h"
+}
 
 
 //Cost added to specific move type
-#define LEFT_COST 0.
-#define RIGHT_COST 0.
-#define FORWARD_COST 0.
-#define BACKWARD_COST 0.
+#define LEFT_COST 1.
+#define RIGHT_COST 1.
+#define FORWARD_COST 1.
+#define BACKWARD_COST 1.
 
 #define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 0. //Cost for pushing a box(added to the above moves)
+#define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {
@@ -105,6 +108,7 @@ std::vector <Sokoban_Box> Sokoban_Board::parse_row(const std::string &row_str, u
 
 Sokoban_Board::~Sokoban_Board()
 {
+    if(this->r) delete[] r;
 }
 
 
@@ -167,7 +171,11 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
             default: break;
         }
     }
+//    std::cout << get_board_str(true) << std::endl;
+
     this->make_wavefront_maps();
+    this->compute_minimum_cost_matching();
+    std::cout << get_reachable_map() << std::endl;
 }
 
 void Sokoban_Board::make_wavefront_maps()
@@ -202,7 +210,7 @@ void Sokoban_Board::make_wavefront_maps()
             if(this->board[x][y_limit_low++].is_solid()) break;
         y_limit_low--;
         seen_wall = false;
-        while(y_limit_high > 0) if(this->board[x][y_limit_high--].is_solid()) break;
+        while(y_limit_high > 0) if(this->board[x][--y_limit_high].is_solid()) break;
         y_limit_high++;
 
         for(uint32_t y = y_limit_low + 1; y < y_limit_high; y++ )
@@ -212,15 +220,15 @@ void Sokoban_Board::make_wavefront_maps()
         }
 
     }
+
     //Restor boxes and player
     this->player_box->type = types.back();
     types.pop_back();
     uint32_t i = 0;
     for(auto &box : this->board_boxes)
     {
-        box.first->type = types[i];
+        box.first->type = types[i++];
     }
-
 }
 
 std::string Sokoban_Board::get_board_str(bool with_coords) const
@@ -348,40 +356,52 @@ void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
 }
 
 float Sokoban_Board::get_heuristic()
-{   //Heuristic function. Very simple. Should probably be improved.
-    //Give an estimate of the number of remaining moves.
-    //This is calculated as the manhattan distance(sum of horisontal and vertical distance)
-    //We also check for (very simple) deadlocks. We return a negative number if a deadlock
-    //is detected.
-    //Generate random number for deadlock detection
-    /*static uint32_t calls = 0;
-    if(calls++ % 100 == 0) std::cout << calls << std::endl;*/
-    //return 1;
-    float h_cost = 0;
+{
+    float h = this->compute_minimum_cost_matching() * (PUSH_COST + MOVE_COST +
+        std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
+    //std::cout << h << std::endl;
+    return h;
+}
+
+float Sokoban_Board::compute_minimum_cost_matching()
+{   //Compute the minimum cost matching for each box in relation to each goal.
+    //This could be used as heuristic function.
+    if(!this->r)
+        r = new int [this->board_boxes.size() * this->board_boxes.size()];
+
+    uint32_t i = 0;;
     for(auto &box_pair : this->board_boxes)
     {
+        uint32_t j = 0;
         auto &box = box_pair.first;
-        //if(box->is_freeze_deadlocked(rand_num))
-        //    if(box->type != Goal_Box)
-        //        return -1;
-        if(box->type == Goal_Box) continue;
-
-        float min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
         {
-            if(box == goal)
-            {
-                std::cout << "!!" << std::endl;
-                min_distance = 0;
-                break;
-            }
-            float dist = box->get_cost_to_box(*goal) * (PUSH_COST + MOVE_COST +
-                std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
-            min_distance = std::min(min_distance, dist);
+            r[i * this->board_boxes.size() + j] = box->get_cost_to_box(*goal);
+            j++;
         }
-        h_cost += min_distance;
+        i++;
     }
-    return h_cost;
+    hungarian_t prob;
+    hungarian_init(&prob, (int *)r, this->board_boxes.size()  , this->board_boxes.size()
+        ,HUNGARIAN_MIN);
+    hungarian_solve(&prob);
+    int minimum_matched_cost = 0;
+    i = 0;
+    for(__attribute__((unused)) auto &box_pair : this->board_boxes)
+    {
+        uint32_t j = 0;
+        auto &box = box_pair.first;
+        for(auto &goal : this->goals)
+        {
+            if((int)j == prob.a[i])
+                minimum_matched_cost += box->get_cost_to_box(*goal);
+            j++;
+        }
+        i++;
+    }
+
+    hungarian_fini(&prob);
+    return minimum_matched_cost;
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
 {
@@ -524,7 +544,7 @@ float Sokoban_Board::get_move_cost(move the_move)
     float start_push_cost = player_start_push_box->cost_to_box;
     //Get the cost of pushing the box(simply turn direction cost)
     float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir) + MOVE_COST;
-    return push_turn_cost + start_push_cost + MOVE_COST;
+    return push_turn_cost + start_push_cost;
 }
 
 
@@ -610,9 +630,11 @@ std::string Sokoban_Board::get_reachable_map()
     return board_str;
 }
 
-std::string Sokoban_Board::get_reachable_str(const Sokoban_Box &box)
+std::string Sokoban_Board::get_reachable_str(Sokoban_Box &box)
 {
-    float cost = box.cost_to_box;
+    Move_Direction dir = Move_Direction::none;
+    auto sim_move = move(dir, &box);
+    float cost = get_move_cost(sim_move);
     if(cost == std::numeric_limits<float>::max()) return std::string("UUUUUU");
     char formated_string[20];
     sprintf(formated_string, "%3.2f", cost);

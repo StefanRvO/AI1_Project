@@ -66,6 +66,7 @@ class Sokoban_Board
         std::string get_board_str(bool with_coords = false) const;
         void populate_neighbours();
         std::vector<move> find_possible_moves();
+        int *r = nullptr;
 
         void calc_reachable(Move_Direction last_move_dir);
         static void  find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
@@ -91,9 +92,10 @@ class Sokoban_Board
         std::vector<move> get_player_moves(const move &box_move);
         std::string get_move_string(const std::vector<move> &moves);
         std::string get_reachable_map();
-        std::string get_reachable_str(const Sokoban_Box &box);
+        std::string get_reachable_str(Sokoban_Box &box);
         void calculate_cost_map(Sokoban_Box &box);
         bool calculate_cost_map_helper(const Sokoban_Box *this_box, Move_Direction dir,
             std::vector<std::vector <float > > *cost_map);
         void make_wavefront_maps();
+        float compute_minimum_cost_matching();
 };
