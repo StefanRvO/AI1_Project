@@ -74,7 +74,7 @@ state_entry *Solver::A_star_solve()
     //Add initial state to ttable and open list
     move init_move = move(Move_Direction::none, this->board->player_box);
     state_entry *this_entry = nullptr;
-    int32_t h = 0;
+    float h = 0;
     ttable.check_table(*this->board, 0, &h, init_move, nullptr, 0, this_entry);
     open_list.push(this_entry);
     state_entry *last_entry = this_entry;
@@ -117,7 +117,7 @@ state_entry *Solver::A_star_solve()
     return nullptr;
 }
 
-
+/*
 int32_t Solver::IDA_star_solve()
 {
     move init_move = move(Move_Direction::up, &this->board->board[0][0]);
@@ -170,7 +170,7 @@ int32_t Solver::IDA_search(uint32_t depth, uint32_t g, int32_t bound, __attribut
     }
     return min;
 }
-
+*/
 void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
 {   //Travel the tree from the init entry to the goal entry by traversing the tree saved in the transmutation table.
     //Create a vector for saving the needed moves

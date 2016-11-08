@@ -24,7 +24,7 @@ void TransmutationTable::clear()
 }
 
 
-bool TransmutationTable::check_table(const Sokoban_Board &board, float cost_to_state, int32_t *heuristic,
+bool TransmutationTable::check_table(const Sokoban_Board &board, float cost_to_state, float *heuristic,
     move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node)
 
 {

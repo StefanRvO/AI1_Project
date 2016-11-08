@@ -347,7 +347,7 @@ void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
     assert(start_size == this->board_boxes.size());
 }
 
-int32_t Sokoban_Board::get_heuristic()
+float Sokoban_Board::get_heuristic()
 {   //Heuristic function. Very simple. Should probably be improved.
     //Give an estimate of the number of remaining moves.
     //This is calculated as the manhattan distance(sum of horisontal and vertical distance)

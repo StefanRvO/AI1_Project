@@ -34,7 +34,7 @@ struct state_entry
                             //The last position is the uppermose, leftmost, position reachable by the player. This means,
                             //That we will be able to hash states which is not excatly equal, as the player position may be different, and match it to the same state.
     float cost_to_state;
-    int32_t heuristic;
+    float heuristic;
 
     //These fields are used for tree traversal to get from one state to another.
     //How to get from one state to another:
@@ -92,7 +92,7 @@ struct bucket
 {
     std::list<state_entry> entries;
 
-    int32_t insert_entry(key_type _full_key, float _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
+    float insert_entry(key_type _full_key, float _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
     {
         //static uint32_t insertions = 0;
         //std::cout << insertions++ << "\t" << _full_key % 1000003 <<std::endl;
@@ -133,6 +133,6 @@ class TransmutationTable
     //If it exists, and the saved state has a higher cost, owerwrite the saved cost with the new,
     //And return true. Replace the value pointed to by heuristic with the saved heuristic.
     //If it does not exist, return true, calculate a new heuristic and put it in the memory given in the pointer.
-    bool check_table(const Sokoban_Board &board, float cost_to_state, int32_t *heuristic,
+    bool check_table(const Sokoban_Board &board, float cost_to_state, float *heuristic,
         move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node);
 };

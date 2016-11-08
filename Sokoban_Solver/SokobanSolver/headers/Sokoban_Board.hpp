@@ -72,7 +72,7 @@ class Sokoban_Board
             std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
         void perform_move(move the_move, bool reverse = false, bool recalculate = true);
-        int32_t get_heuristic();
+        float get_heuristic();
         friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &_board)
         {
             os << _board.get_board_str();
