@@ -15,21 +15,6 @@ Solver::Solver(Sokoban_Board *_board)
 
 bool Solver::solve()
 {
-    auto dead_fields = DeadLockDetector::get_static_deadlock_boxes(*this->board);
-    //std::cout << dead_fields.size() << std::endl;
-    //std::cout << *this->board << std::endl;
-    for(auto &field : dead_fields)
-    {
-        //std::cout << *field << std::endl;
-        switch(field->type)
-        {
-            case Free: field->change_type(DeadLock_Zone_Free);
-                break;
-            case Player: field->change_type(DeadLock_Zone_Player);
-                break;
-            default: break;
-        }
-    }
     //std::cout << this->board->get_board_str(true) << std::endl;
     /*std::cout << *this->board->player_box << std::endl;
     std::cout << "player box " << *this->board->player_box << std::endl;*/

@@ -36,6 +36,11 @@ Move_Direction get_reverse_direction(Move_Direction dir)
     return left;
 }
 
+float Sokoban_Box::get_cost_to_box(Sokoban_Box &box)
+{
+    return (*this->cost_map)[box.pos.x_pos][box.pos.y_pos];
+}
+
 unsigned char get_direction_char(Move_Direction &dir)
 {
     switch(dir)
@@ -51,6 +56,11 @@ unsigned char get_direction_char(Move_Direction &dir)
 }
 
 
+Sokoban_Box::~Sokoban_Box()
+{
+    if(this->cost_map)
+        delete this->cost_map;
+}
 
 Sokoban_Box::Sokoban_Box(Box_Type _type, Position _pos)
 {
@@ -170,7 +180,7 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
 }
 
 
-bool Sokoban_Box::is_moveable(Move_Direction dir)
+bool Sokoban_Box::is_moveable(Move_Direction dir) const
 {
     switch(this->get_neighbour(dir)->type)
     {
@@ -195,7 +205,7 @@ bool Sokoban_Box::is_deadlocked()
     return false;
 }
 
-Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
+Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir) const
 {   //Return the pointer to the neighbour in the given direction
     switch(dir)
     {
@@ -206,7 +216,7 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
         default:
             assert(false);
     }
-    return this;
+    return nullptr;
 }
 
 bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2)

@@ -10,6 +10,8 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <cctype>
 #include <cstdio>
+#include "DeadLockDetector.hpp"
+
 
 
 //Cost added to specific move type
@@ -152,6 +154,73 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     }
     this->populate_neighbours();
     this->calc_reachable(Move_Direction::none);
+    auto dead_fields = DeadLockDetector::get_static_deadlock_boxes(*this);
+    for(auto &field : dead_fields)
+    {
+        //std::cout << *field << std::endl;
+        switch(field->type)
+        {
+            case Free: field->change_type(DeadLock_Zone_Free);
+                break;
+            case Player: field->change_type(DeadLock_Zone_Player);
+                break;
+            default: break;
+        }
+    }
+    this->make_wavefront_maps();
+}
+
+void Sokoban_Board::make_wavefront_maps()
+{
+    //Temporarily remove player and boxes
+    std::vector<Box_Type> types;
+    for(auto &box : this->board_boxes)
+    {
+        types.push_back(box.first->type);
+        box.first->type = Box_Type::Free;
+    }
+    types.push_back(this->player_box->type);
+    switch(this->player_box->type)
+    {
+        case Player_On_Goal:
+        case Player:
+            this->player_box->type = Box_Type::Free;
+            break;
+        case DeadLock_Zone_Player:
+            this->player_box->type = Box_Type::DeadLock_Zone_Free;
+            break;
+        default:
+            assert(false);
+    }
+    for(uint32_t x = 1; x < this->size_x -1; x++ )
+    {
+        //Make sure only to make a wavefront inside the map
+        bool seen_wall = false;
+        uint32_t y_limit_low = 0;
+        uint32_t y_limit_high = this->size_y;
+        while(y_limit_low < this->size_y)
+            if(this->board[x][y_limit_low++].is_solid()) break;
+        y_limit_low--;
+        seen_wall = false;
+        while(y_limit_high > 0) if(this->board[x][y_limit_high--].is_solid()) break;
+        y_limit_high++;
+
+        for(uint32_t y = y_limit_low + 1; y < y_limit_high; y++ )
+        {
+            if(this->board[x][y].is_solid()) continue;
+            this->calculate_cost_map(this->board[x][y]);
+        }
+
+    }
+    //Restor boxes and player
+    this->player_box->type = types.back();
+    types.pop_back();
+    uint32_t i = 0;
+    for(auto &box : this->board_boxes)
+    {
+        box.first->type = types[i];
+    }
+
 }
 
 std::string Sokoban_Board::get_board_str(bool with_coords) const
@@ -288,7 +357,7 @@ int32_t Sokoban_Board::get_heuristic()
     /*static uint32_t calls = 0;
     if(calls++ % 100 == 0) std::cout << calls << std::endl;*/
     //return 1;
-    int32_t h_cost = 0;
+    float h_cost = 0;
     for(auto &box_pair : this->board_boxes)
     {
         auto &box = box_pair.first;
@@ -297,21 +366,17 @@ int32_t Sokoban_Board::get_heuristic()
         //        return -1;
         if(box->type == Goal_Box) continue;
 
-        uint32_t min_distance = 0xFFFFFF;
+        float min_distance = 0xFFFFFF;
         for(auto &goal : this->goals)
         {
-//            std::cout << "GOAL: " << goal->pos.x_pos << " " <<
-//                goal->pos.y_pos << std::endl <<std::endl;
-
             if(box == goal)
             {
                 std::cout << "!!" << std::endl;
                 min_distance = 0;
                 break;
             }
-            uint32_t dist = abs((int32_t)box->pos.x_pos - (int32_t)goal->pos.x_pos) +
-                abs((int32_t)box->pos.y_pos - (int32_t)goal->pos.y_pos) * (PUSH_COST + MOVE_COST +
-                    std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
+            float dist = box->get_cost_to_box(*goal) * (PUSH_COST + MOVE_COST +
+                std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
             min_distance = std::min(min_distance, dist);
         }
         h_cost += min_distance;
@@ -552,6 +617,60 @@ std::string Sokoban_Board::get_reachable_str(const Sokoban_Box &box)
     char formated_string[20];
     sprintf(formated_string, "%3.2f", cost);
     return std::string(formated_string);
+}
+
+void Sokoban_Board::calculate_cost_map(Sokoban_Box &box)
+{
+    //Calculate a wavefront map for the given box and give it to the box.
+    //Quick and dirty, should probably be cleaned up at some point...
+    std::vector<std::vector <float > > *cost_map = new std::vector<std::vector <float > >;
+    for(uint32_t x = 0; x < this->size_x; x++)
+    {
+        std::vector<float> row_vec;
+        cost_map->push_back(row_vec);
+        for(uint32_t y = 0; y < this->size_y; y++)
+        {
+            cost_map->back().push_back(std::numeric_limits<float>::max());
+        }
+    }
+    (*cost_map)[box.pos.x_pos][box.pos.y_pos] = 0;
+    auto expand_points_this = new std::vector<Sokoban_Box *>; //points to expand from in this run
+    auto expand_points_next = new std::vector<Sokoban_Box *>; //points to expand from in the next run
+    expand_points_this->push_back(&box);
+    while(expand_points_this->size())
+    {
+        for(auto this_point : *expand_points_this)
+        {
+            if(calculate_cost_map_helper(this_point, Move_Direction::up, cost_map))
+                expand_points_next->push_back(this_point->get_neighbour(Move_Direction::up));
+            if(calculate_cost_map_helper(this_point, Move_Direction::down, cost_map))
+                expand_points_next->push_back(this_point->get_neighbour(Move_Direction::down));
+            if(calculate_cost_map_helper(this_point, Move_Direction::left, cost_map))
+                expand_points_next->push_back(this_point->get_neighbour(Move_Direction::left));
+            if(calculate_cost_map_helper(this_point, Move_Direction::right, cost_map))
+                expand_points_next->push_back(this_point->get_neighbour(Move_Direction::right));
+        }
+        expand_points_this->clear();
+        std::swap(expand_points_this, expand_points_next);
+    }
+    delete expand_points_this;
+    delete expand_points_next;
+    box.set_cost_map(cost_map);
+}
+
+bool Sokoban_Board::calculate_cost_map_helper(const Sokoban_Box *this_box, Move_Direction dir,
+    std::vector<std::vector <float > > *cost_map)
+{
+    Sokoban_Box *nb = this_box->get_neighbour(dir);
+    if(this_box->is_moveable(dir) &&
+    (*cost_map)[this_box->pos.x_pos][this_box->pos.y_pos] + 1 <
+    (*cost_map)[nb->pos.x_pos][nb->pos.y_pos] )
+    {
+        (*cost_map)[nb->pos.x_pos][nb->pos.y_pos] =
+            (*cost_map)[this_box->pos.x_pos][this_box->pos.y_pos] + 1;
+        return true;
+    }
+    return false;
 }
 
 /*

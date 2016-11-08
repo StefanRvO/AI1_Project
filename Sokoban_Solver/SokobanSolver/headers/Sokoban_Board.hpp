@@ -24,6 +24,7 @@ class Sokoban_Board
         std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
 
 
+
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
                                         //Made as an hash map for fast access to elements to delete and add.
                                         //May be a bit weird, and could maybe be changed to another container.
@@ -91,5 +92,8 @@ class Sokoban_Board
         std::string get_move_string(const std::vector<move> &moves);
         std::string get_reachable_map();
         std::string get_reachable_str(const Sokoban_Box &box);
-
+        void calculate_cost_map(Sokoban_Box &box);
+        bool calculate_cost_map_helper(const Sokoban_Box *this_box, Move_Direction dir,
+            std::vector<std::vector <float > > *cost_map);
+        void make_wavefront_maps();
 };
