@@ -215,13 +215,13 @@ void Solver::go_to_state(state_entry *init_entry, state_entry *goal_entry)
           goal_entry = goal_entry->parent_entry;
       }
     }
-    for(auto &move : moves_from_init)
+    for(auto &the_move : moves_from_init)
     {
-      this->board->perform_move(move, true, false);
+      this->board->perform_move(the_move, true, false);
     }
-    for(auto &move :  boost::adaptors::reverse(moves_from_goal))
+    for(auto &the_move :  boost::adaptors::reverse(moves_from_goal))
     {
-      this->board->perform_move(move, false, false);
+      this->board->perform_move(the_move, false, false);
     }
     if(moves_from_goal.size() == 0)
     {
