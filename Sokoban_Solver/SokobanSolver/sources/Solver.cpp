@@ -85,6 +85,7 @@ state_entry *Solver::A_star_solve()
         open_list.erase(open_list.begin());
         go_to_state(last_entry, current);
         this->visited_nodes++;
+        //std::cout << current->get_cost_estimate() << std::endl;
         this->board->calc_reachable(current->last_move.first);
         if(this->board->is_solved())
         {

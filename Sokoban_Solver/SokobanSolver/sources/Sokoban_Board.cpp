@@ -14,12 +14,12 @@
 
 
 //Cost added to specific move type
-#define LEFT_COST 1.
-#define RIGHT_COST 1.
-#define FORWARD_COST 1.
-#define BACKWARD_COST 1.
+#define LEFT_COST 0.
+#define RIGHT_COST 0.
+#define FORWARD_COST 0.
+#define BACKWARD_COST 0.
 
-#define MOVE_COST 0. //Cost added to all move types
+#define MOVE_COST 1. //Cost added to all move types
 #define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
