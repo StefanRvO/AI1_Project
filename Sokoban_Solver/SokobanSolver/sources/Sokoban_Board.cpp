@@ -11,10 +11,6 @@
 #include <cctype>
 #include <cstdio>
 #include "DeadLockDetector.hpp"
-extern "C"
-{
-    #include "hungarian.h"
-}
 
 
 //Cost added to specific move type
@@ -23,7 +19,7 @@ extern "C"
 #define FORWARD_COST 1.
 #define BACKWARD_COST 1.
 
-#define MOVE_COST 1. //Cost added to all move types
+#define MOVE_COST 0. //Cost added to all move types
 #define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
@@ -114,7 +110,7 @@ Sokoban_Board::~Sokoban_Board()
 
 //Copy constructor
 Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
-: rand_gen(_board.rand_gen), gen(_board.gen)
+: rand_gen(_board.rand_gen), gen(_board.gen), cost_matrix(_board.cost_matrix)
 {
     this->board = _board.board;
     this->size_x = _board.size_x;
@@ -125,7 +121,7 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
 }
 
 Sokoban_Board::Sokoban_Board(std::string &board_str)
-: rand_gen(1, 0x0FFFFFFFFFFFFFFF),  gen(this->rd())
+: rand_gen(1, 0x0FFFFFFFFFFFFFFF),  gen(this->rd()), cost_matrix(1,1)
 
 {
     //Split into the rows.
@@ -172,10 +168,10 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
         }
     }
 //    std::cout << get_board_str(true) << std::endl;
-
+    cost_matrix = dlib::matrix<int>(this->board_boxes.size(), this->board_boxes.size());
     this->make_wavefront_maps();
     this->compute_minimum_cost_matching();
-    std::cout << get_reachable_map() << std::endl;
+    //std::cout << get_reachable_map() << std::endl;
 }
 
 void Sokoban_Board::make_wavefront_maps()
@@ -296,7 +292,16 @@ void Sokoban_Board::populate_neighbours()
     this->initial_player_box = this->player_box;
 }
 
-
+bool Sokoban_Board::is_solved()
+{
+    for(auto &box_tmp : this->board_boxes)
+    {
+        Sokoban_Box &box = *box_tmp.first;
+        if(box.type != Box_Type::Goal_Box)
+            return false;
+    }
+    return true;
+}
 
 std::vector<move> Sokoban_Board::find_possible_moves()
 {
@@ -359,33 +364,27 @@ float Sokoban_Board::get_heuristic()
 {
     float h = this->compute_minimum_cost_matching() * (PUSH_COST + MOVE_COST +
         std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
-    //std::cout << h << std::endl;
     return h;
 }
 
 float Sokoban_Board::compute_minimum_cost_matching()
 {   //Compute the minimum cost matching for each box in relation to each goal.
     //This could be used as heuristic function.
-    if(!this->r)
-        r = new int [this->board_boxes.size() * this->board_boxes.size()];
-
-    uint32_t i = 0;;
+    uint32_t i = 0;
     for(auto &box_pair : this->board_boxes)
     {
         uint32_t j = 0;
         auto &box = box_pair.first;
         for(auto &goal : this->goals)
         {
-            r[i * this->board_boxes.size() + j] = box->get_cost_to_box(*goal);
+            cost_matrix(i,j) = box->get_cost_to_box(*goal);
             j++;
         }
         i++;
     }
-    hungarian_t prob;
-    hungarian_init(&prob, (int *)r, this->board_boxes.size()  , this->board_boxes.size()
-        ,HUNGARIAN_MIN);
-    hungarian_solve(&prob);
+
     int minimum_matched_cost = 0;
+    std::vector<long> assignment = dlib::max_cost_assignment(cost_matrix);
     i = 0;
     for(__attribute__((unused)) auto &box_pair : this->board_boxes)
     {
@@ -393,14 +392,13 @@ float Sokoban_Board::compute_minimum_cost_matching()
         auto &box = box_pair.first;
         for(auto &goal : this->goals)
         {
-            if((int)j == prob.a[i])
+            if(assignment[i] == j)
                 minimum_matched_cost += box->get_cost_to_box(*goal);
             j++;
         }
         i++;
     }
 
-    hungarian_fini(&prob);
     return minimum_matched_cost;
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
@@ -477,28 +475,26 @@ void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *c
     //std::cout << "new cost" << new_distance << std::endl;
     if(new_distance < neighbour->cost_to_box)
     {
-        //Remove and insert into queue if not closed
-        if(!neighbour->closed)
+        //Remove and insert into queue
+        //std::cout << "replaces" << std::endl;
+        auto itt = reachable_open_list.find(neighbour);
+        if(itt == reachable_open_list.end())
         {
-            //std::cout << "replaces" << std::endl;
-            auto itt = reachable_open_list.find(neighbour);
-            if(itt == reachable_open_list.end())
-            {
-                //std::cout << "Not found" << std::endl;
-                return;
-            }
-            neighbour->cost_to_box = new_distance;
-            neighbour->parent_node = current;
-            neighbour->move_dir = move_dir;
-            /*
-            Position check_pos = {1,2};
-            if(current->pos.x_pos == check_pos.x_pos && current->pos.y_pos == check_pos.y_pos)
-                std::cout << "Set parent node for " << *neighbour << std::endl;*/
-            reachable_open_list.erase(itt);
-            //std::cout << reachable_open_list.size() << std::endl;
+            assert(false);
             reachable_open_list.insert(neighbour);
-            //std::cout << reachable_open_list.size() << std::endl;
+            return;
         }
+        neighbour->cost_to_box = new_distance;
+        neighbour->parent_node = current;
+        neighbour->move_dir = move_dir;
+        /*
+        Position check_pos = {1,2};
+        if(current->pos.x_pos == check_pos.x_pos && current->pos.y_pos == check_pos.y_pos)
+            std::cout << "Set parent node for " << *neighbour << std::endl;*/
+        reachable_open_list.erase(itt);
+        //std::cout << reachable_open_list.size() << std::endl;
+        reachable_open_list.insert(neighbour);
+        //std::cout << reachable_open_list.size() << std::endl;
     }
 }
 float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir)

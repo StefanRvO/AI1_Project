@@ -29,7 +29,7 @@ bool Solver::solve()
     this->board->calc_reachable(Move_Direction::none);
     //std::cout << this->board->get_reachable_map() << std::endl;
     __attribute__((unused))state_entry *goal_entry = A_star_solve();
-    std::cout << "Solved" << std::endl;
+    std::cout << "Solved, visited " << this->visited_nodes << " nodes." << std::endl;
     std::cout << *this->board << std::endl;
     auto moves = this->get_path_to_state(goal_entry);
     std::cout << moves.size() << std::endl;
@@ -42,9 +42,10 @@ bool Solver::solve()
     for(auto &the_move : moves)
     {
         std::cout << the_move << std::endl;
-        /*this->board->perform_move(the_move, false, true);
-        std::cout << *this->board << std::endl;
-        std::cout << this->board->get_reachable_map() << std::endl;*/
+        //this->board->perform_move(the_move, false, true);
+        //std::cout << *this->board << std::endl;
+        //state_entry* this_entry = ttable.get_entry(*this->board);
+        //std::cout << this_entry->heuristic << "\t" << this_entry->cost_to_state << "\t" << this_entry->full_key <<   std::endl;
     }
 
     //std::cout << "Player_moves!" << std::endl;
@@ -73,46 +74,59 @@ state_entry *Solver::A_star_solve()
     std::list<float> move_costs;
     //Add initial state to ttable and open list
     move init_move = move(Move_Direction::none, this->board->player_box);
-    state_entry *this_entry = nullptr;
+    state_entry *current = nullptr;
     float h = 0;
-    ttable.check_table(*this->board, 0, &h, init_move, nullptr, 0, this_entry);
-    open_list.push(this_entry);
-    state_entry *last_entry = this_entry;
+    ttable.check_table(*this->board, 0, &h, init_move, nullptr, 0, current);
+    open_list.insert(current);
+    state_entry *last_entry = current;
     while(open_list.size())
     {
-        //std::cout << this->board << std::endl;
-        //Get the top entry on the open list
-        state_entry *node_to_expand = open_list.top();
-        this->go_to_state(last_entry, node_to_expand);
-        open_list.pop();
-        if(node_to_expand->heuristic == 0)
-            return node_to_expand;
-        //Go to this state
-        //Calculate children
-        //if(node_to_expand->heuristic > 20) std::cout << node_to_expand->heuristic << std::endl;
-        this->board->calc_reachable(node_to_expand->last_move.first);
-        auto moves = this->board->find_possible_moves();
+        current = *open_list.begin();
+        open_list.erase(open_list.begin());
+        go_to_state(last_entry, current);
+        this->visited_nodes++;
+        this->board->calc_reachable(current->last_move.first);
+        if(this->board->is_solved())
+        {
+            std::cout << this->visited_nodes << std::endl;
+            return current;
+        }
+        current->state = CLOSED;
+        auto possible_moves = this->board->find_possible_moves();
+        //Calculate move costs
         move_costs.clear();
-        for (__attribute__((unused)) auto &the_move : moves)
+        for (auto &the_move : possible_moves)
         {
             move_costs.push_back(this->board->get_move_cost(the_move));
         }
-        for (auto &the_move : moves)
+        for (auto &the_move : possible_moves)
         {
+            state_entry *neighbour = nullptr;
             float move_cost = move_costs.front();
             move_costs.pop_front();
             this->board->perform_move(the_move, false, false);
-            if( ttable.check_table(*this->board,node_to_expand->cost_to_state + move_cost, &h, the_move,
-                node_to_expand, node_to_expand->total_moves + 1, this_entry) == false)
+
+            if(this->ttable.check_table(*this->board, current->cost_to_state + move_cost, &h,
+                the_move, current, current->total_moves + 1, neighbour) == false)
             {
                 this->board->perform_move(the_move, true, false);
                 continue;
             }
-
-            this->open_list.push(this_entry);
+            auto itt = open_list.find(neighbour);
+            neighbour->cost_to_state = current->cost_to_state + move_cost;
+            if(itt == open_list.end())
+            {
+                open_list.insert(neighbour);
+            }
+            else
+            {
+                open_list.erase(itt);
+                open_list.insert(neighbour);
+            }
             this->board->perform_move(the_move, true, false);
+
         }
-        last_entry = node_to_expand;
+        last_entry = current;
     }
     return nullptr;
 }

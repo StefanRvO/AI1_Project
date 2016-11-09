@@ -41,12 +41,13 @@ bool TransmutationTable::check_table(const Sokoban_Board &board, float cost_to_s
         if(entry.full_key == full_key)
         {
             #ifdef ID
-            if(entry.cost_to_state >= cost_to_state)
+            if(entry.state == OPEN && entry.cost_to_state >= cost_to_state)
             #else
-            if(entry.cost_to_state > cost_to_state)
+            if(entry.state == OPEN && entry.cost_to_state > cost_to_state)
             #endif
             {
-                entry.cost_to_state = cost_to_state;
+                //Remember to update cost to state outside
+                //entry.cost_to_state = cost_to_state;
                 entry.last_move = last_move;
                 entry.parent_entry = parent_node;
                 entry.total_moves = depth;

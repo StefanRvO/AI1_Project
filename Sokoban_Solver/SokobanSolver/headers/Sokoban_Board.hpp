@@ -6,6 +6,8 @@
 #include <map>
 #include <random>
 #include <set>
+#include <dlib/optimization/max_cost_assignment.h>
+
 class Sokoban_Board;
 class Sokoban_Board
 {
@@ -22,7 +24,7 @@ class Sokoban_Board
         Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
         Sokoban_Box *initial_player_box = nullptr;
         std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
-
+        dlib::matrix<int> cost_matrix;
 
 
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
@@ -98,4 +100,5 @@ class Sokoban_Board
             std::vector<std::vector <float > > *cost_map);
         void make_wavefront_maps();
         float compute_minimum_cost_matching();
+        bool is_solved();
 };

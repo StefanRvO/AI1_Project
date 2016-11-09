@@ -7,7 +7,8 @@
 #include "Sokoban_Board.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <list>
-#define MAX_BOXES 50
+#include <limits>
+#define MAX_BOXES 10
 #define BITS_PER_COORD 6
 
 #define BITS_TO_KEY ((MAX_BOXES + 1) * BITS_PER_COORD * 2)
@@ -27,6 +28,9 @@ typedef b_mp::uint1024_t key_type;
 #error No available type to make the key.
 #endif
 
+#define CLOSED 0
+#define OPEN 1
+
 struct state_entry;
 struct state_entry
 {
@@ -35,7 +39,7 @@ struct state_entry
                             //That we will be able to hash states which is not excatly equal, as the player position may be different, and match it to the same state.
     float cost_to_state;
     float heuristic;
-
+    uint8_t state = OPEN;
     //These fields are used for tree traversal to get from one state to another.
     //How to get from one state to another:
     //I = initial node, the node we want to move away from.
@@ -73,18 +77,18 @@ struct state_entry
         return key;
     }
     //Comparison function for priority queue
-    bool operator() (state_entry* &first, state_entry* &second)
+    float get_cost_estimate()
+    {
+        return this->heuristic + this->cost_to_state;
+    }
+    bool operator() (state_entry* first, state_entry* second)
     {   //return true if first has a lower estimated cost then second
         //The estimated cost is heuristic + cost_to_state
-
-        //If heuristic is -1, means we have no solution from this state.
-        if(second->heuristic < 0)
-            return false;
-        if(first->heuristic < 0)
-            return true;
-        float cost_estimate_1 = first->cost_to_state + first->heuristic;
-        float cost_estimate_2 = second->cost_to_state + second->heuristic;
-        return cost_estimate_1 > cost_estimate_2;
+        if( first->get_cost_estimate() == second->get_cost_estimate() )
+        {
+            return (void *)first < (void *)second;
+        }
+        return first->get_cost_estimate() < second->get_cost_estimate();
     }
 };
 
@@ -97,10 +101,12 @@ struct bucket
         //static uint32_t insertions = 0;
         //std::cout << insertions++ << "\t" << _full_key % 1000003 <<std::endl;
         state_entry new_entry;
+        new_entry.state = OPEN;
         new_entry.full_key = _full_key;
         new_entry.cost_to_state = _cost_to_state;
         auto &non_const_board = const_cast <Sokoban_Board &>(board);
         new_entry.heuristic = non_const_board.get_heuristic();
+        new_entry.heuristic = this->fake_heuristic(&new_entry);
         new_entry.last_move = last_move;
         new_entry.parent_entry = parent_node;
         new_entry.total_moves = depth;
@@ -108,7 +114,21 @@ struct bucket
         this_node = &entries.back();
         return new_entry.heuristic;
     }
+    float fake_heuristic(state_entry *entry)
+    {
+        /*if(entry->full_key == 36882296192643268) return 150.;
+        if(entry->full_key == 36882296175866051) return 144.;
+        if(entry->full_key == 36886625536454788) return 144.;
+        if(entry->full_key == 36886556816978052) return 141.;
+        if(entry->full_key == 36882296175866051) return 144.;
+        if(entry->full_key == 36882296175866051) return 144.;
+        if(entry->full_key == 36882296175866051) return 144.;
+        if(entry->full_key == 36882296175866051) return 144.;*/
+        return entry->heuristic;
+    }
 };
+
+
 
 
 class TransmutationTable
