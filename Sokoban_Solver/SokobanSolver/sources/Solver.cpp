@@ -33,26 +33,12 @@ bool Solver::solve()
     std::cout << *this->board << std::endl;
     auto moves = this->get_path_to_state(goal_entry);
     std::cout << moves.size() << std::endl;
-    this->go_too_root_state();
-    /*std::cout << *this->board << std::endl;
-    this->board->calc_reachable(Move_Direction::none);*/
-    //std::cout << *this->board << std::endl;
-    //std::cout << this->board->get_reachable_map() << std::endl;
-
-    for(auto &the_move : moves)
-    {
-        std::cout << the_move << std::endl;
-        //this->board->perform_move(the_move, false, true);
-        //std::cout << *this->board << std::endl;
-        //state_entry* this_entry = ttable.get_entry(*this->board);
-        //std::cout << this_entry->heuristic << "\t" << this_entry->cost_to_state << "\t" << this_entry->full_key <<   std::endl;
-    }
 
     //std::cout << "Player_moves!" << std::endl;
+    this->go_too_root_state();
     this->board->calc_reachable(Move_Direction::none);
     auto player_moves = this->board->get_player_moves(moves);
     //std::cout << moves[0] << std::endl;
-    std::cout << player_moves.size() << std::endl;
     //for(auto &the_move : player_moves)
     //{
     //    std::cout << the_move << std::endl;
@@ -62,6 +48,27 @@ bool Solver::solve()
 
     //std::cout << *this->board << std::endl;
     std::cout << this->board->get_move_string(player_moves) << std::endl;
+
+    this->go_too_root_state();
+    //std::cout << *this->board << std::endl;
+    this->board->calc_reachable(Move_Direction::none);
+    //std::cout << *this->board << std::endl;
+    //std::cout << this->board->get_reachable_map() << std::endl;
+
+    for(auto &the_move : moves)
+    {
+        std::cout << the_move << "\t" << " Move cost: " <<
+            this->board->get_move_cost(the_move) << "\t" << this->board->get_heuristic() << "\t"
+            << this->ttable.get_entry(*this->board)->get_cost_estimate() << std::endl;
+        this->board->perform_move(the_move, false, true);
+        //std::cout << *this->board << std::endl;
+        //state_entry* this_entry = ttable.get_entry(*this->board);
+        //std::cout << this_entry->heuristic << "\t" << this_entry->cost_to_state << "\t" << this_entry->full_key <<   std::endl;
+    }
+    std::cout << std::endl << player_moves.size()  << " cost: " << goal_entry->cost_to_state <<
+        "\t" << goal_entry->get_cost_estimate() << "\t" << goal_entry->heuristic <<
+        "\t" << this->board->get_heuristic() << std::endl;
+
     //{
     //
     //}*/
@@ -79,17 +86,23 @@ state_entry *Solver::A_star_solve()
     ttable.check_table(*this->board, 0, &h, init_move, nullptr, 0, current);
     open_list.insert(current);
     state_entry *last_entry = current;
+    float last_cost = 0;
     while(open_list.size())
     {
         current = *open_list.begin();
         open_list.erase(open_list.begin());
         go_to_state(last_entry, current);
         this->visited_nodes++;
-        //std::cout << current->get_cost_estimate() << std::endl;
+        float current_cost = current->get_cost_estimate();
+        if(current_cost != last_cost)
+        {
+            last_cost = current_cost;
+            std::cout << "Searching for solution with cost " << last_cost << "\r" << std::flush;
+        }
         this->board->calc_reachable(current->last_move.first);
         if(this->board->is_solved())
         {
-            std::cout << this->visited_nodes << std::endl;
+            std::cout << std::endl;
             return current;
         }
         current->state = CLOSED;

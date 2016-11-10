@@ -13,14 +13,6 @@
 #include "DeadLockDetector.hpp"
 
 
-//Cost added to specific move type
-#define LEFT_COST 0.
-#define RIGHT_COST 0.
-#define FORWARD_COST 0.
-#define BACKWARD_COST 0.
-
-#define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 uint8_t get_digits(uint32_t x)
 {
@@ -377,12 +369,12 @@ float Sokoban_Board::compute_minimum_cost_matching()
         auto &box = box_pair.first;
         for(auto &goal : this->goals)
         {
-            cost_matrix(i,j) = box->get_cost_to_box(*goal);
+            cost_matrix(i,j) = -box->get_cost_to_box(*goal);
             j++;
         }
         i++;
     }
-
+    //std::cout << std::endl << cost_matrix << std::endl;
     int minimum_matched_cost = 0;
     std::vector<long> assignment = dlib::max_cost_assignment(cost_matrix);
     i = 0;
@@ -393,7 +385,10 @@ float Sokoban_Board::compute_minimum_cost_matching()
         for(auto &goal : this->goals)
         {
             if(assignment[i] == j)
+            {
                 minimum_matched_cost += box->get_cost_to_box(*goal);
+                //std::cout << j << std::endl;
+            }
             j++;
         }
         i++;

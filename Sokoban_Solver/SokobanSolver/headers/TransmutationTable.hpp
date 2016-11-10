@@ -86,7 +86,7 @@ struct state_entry
         //The estimated cost is heuristic + cost_to_state
         if( first->get_cost_estimate() == second->get_cost_estimate() )
         {
-            return (void *)first < (void *)second;
+            return (void *)first > (void *)second;
         }
         return first->get_cost_estimate() < second->get_cost_estimate();
     }
