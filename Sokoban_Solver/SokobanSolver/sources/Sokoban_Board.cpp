@@ -191,13 +191,11 @@ void Sokoban_Board::make_wavefront_maps()
     for(uint32_t x = 1; x < this->size_x -1; x++ )
     {
         //Make sure only to make a wavefront inside the map
-        bool seen_wall = false;
         uint32_t y_limit_low = 0;
         uint32_t y_limit_high = this->size_y;
         while(y_limit_low < this->size_y)
             if(this->board[x][y_limit_low++].is_solid()) break;
         y_limit_low--;
-        seen_wall = false;
         while(y_limit_high > 0) if(this->board[x][--y_limit_high].is_solid()) break;
         y_limit_high++;
 
