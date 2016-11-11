@@ -11,7 +11,10 @@ public class DecisionMaker  implements Behavior {
     private Turn turner = Turn.getInstance();
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
-    String lol = "flflflflflflflflflflflfl";
+
+    String lol = "ffffffffffffffff";
+    //String lol = "flflfrfrfrfrflfl";
+
     int position = 0;
     public boolean takeControl()
     {
@@ -51,6 +54,8 @@ public class DecisionMaker  implements Behavior {
             turner.doTurn(Direction.right, 1);
         }
         suppressed = false;
+        //TODO: Do something so it can be allowed to drive forward if there
+        //      are multiple forward commands.
         MotorL.stop(true);
         MotorR.stop(true);
         while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);

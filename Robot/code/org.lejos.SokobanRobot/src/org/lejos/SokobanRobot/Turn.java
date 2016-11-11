@@ -14,8 +14,8 @@ public class Turn  extends Thread implements Behavior {
     LightSensor linelight_right = new LightSensor(SensorPort.S3);
     LightSensor linelight_left = new LightSensor(SensorPort.S4);
     public int frequency = 1000;
-    RunningAverage RA_R =  new RunningAverage(this.frequency / 100, linelight_right.readValue());
-    RunningAverage RA_L =  new RunningAverage(this.frequency / 100, linelight_left.readValue());
+    RunningAverage RA_R =  new RunningAverage(this.frequency / 400, linelight_right.readValue());
+    RunningAverage RA_L =  new RunningAverage(this.frequency / 400, linelight_left.readValue());
 
     private CrossSectionDetector cross_detector = CrossSectionDetector.getInstance();
     NXTRegulatedMotor MotorL = Motor.A;
@@ -65,8 +65,8 @@ public class Turn  extends Thread implements Behavior {
             MotorL.forward();
             MotorR.backward();
         }
-        MotorL.setSpeed((int)MotorL.getMaxSpeed());
-        MotorR.setSpeed((int)MotorL.getMaxSpeed());
+        MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * 0.50)); //TODO: Make constant speed, should not depend on voltage.
+        MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * 0.50)); //TODO: Make constant speed, should not depend on voltage.
         //Wait a moment to make sure that we have turned of from the crossSection
         wait_for_new_crossection();
 
@@ -80,7 +80,7 @@ public class Turn  extends Thread implements Behavior {
         {
             try
             {
-                Thread.sleep(150); //Wait to turn away from line
+                Thread.sleep(300); //Wait to turn away from line
                 RA_R.fill_with_samples(linelight_right.readValue());
                 RA_L.fill_with_samples(linelight_left.readValue());
             }
@@ -100,16 +100,13 @@ public class Turn  extends Thread implements Behavior {
 
             }
 
-            cross_detector.set_suspend_crossdector( 500 );
+            cross_detector.set_suspend_crossdector( 300 );
             this.turn_count--;
             if(this.turn_count > 0){
                 cross_detector.unset_cross_section();
             }
 
         }
-
-
-
     }
 
     public Boolean turning()

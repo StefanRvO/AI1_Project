@@ -8,16 +8,24 @@ import lejos.robotics.subsumption.Behavior;
 
 
 public class AdjustLeft  implements Behavior {
-    int light_threshold = 10;
+    private int light_threshold = 5;
     private boolean suppressed = false;
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
     LightSensor linelight_right = new LightSensor(SensorPort.S3);
     LightSensor linelight_left = new LightSensor(SensorPort.S4);
 
+    private int diff = linelight_right.readValue() - linelight_left.readValue();
+
     public boolean takeControl() {
-        int diff = linelight_right.readValue() - linelight_left.readValue();
-        if( diff > light_threshold ) return true;
+        diff = linelight_right.readValue() - linelight_left.readValue();
+
+        if( diff > light_threshold ){
+            System.out.print( diff );
+            System.out.print("\t");
+            System.out.println( (int)(100*(1.3*light_threshold) / diff) );
+            return true;
+        }
         return false;
     }
 
@@ -26,23 +34,22 @@ public class AdjustLeft  implements Behavior {
     }
 
     public void action() {
-        /*System.out.print("L: ");
-        System.out.print(linelight_left.readValue());
-        System.out.print(" R: ");
-        System.out.println(linelight_right.readValue());*/
-        //System.out.println("L");
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed((int)(MotorL.getMaxSpeed() * 0.7));
-        MotorR.setSpeed((int)MotorL.getMaxSpeed());
-        try
-        {
+
+        //  The adjust speed needs to be inversely proportional.
+        //      Mean that the difference is, the slower should the wheel turn.
+        //      For ratio=1, maxSpeed * ratio would be forward.
+        //      For ratio=0, maxSpeed * ratio, should mean the wheel doesn't turn at all.
+
+        MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * ( (1.2*light_threshold) / diff) ) );
+        MotorR.setSpeed( (int)MotorL.getMaxSpeed() );
+/*
+        try{
             Thread.sleep(5);
         }
-        catch(InterruptedException e)
-        {
-
-        }
+        catch(InterruptedException e){}
+        */
     }
 }

@@ -8,15 +8,18 @@ import lejos.robotics.subsumption.Behavior;
 
 
 public class AdjustRight  implements Behavior {
-    int light_threshold = 10;
+    private int light_threshold = 5;
     private boolean suppressed = false;
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
     LightSensor linelight_right = new LightSensor(SensorPort.S3);
     LightSensor linelight_left = new LightSensor(SensorPort.S4);
 
+    private int diff = linelight_left.readValue() - linelight_right.readValue();
+
     public boolean takeControl() {
-        int diff = linelight_left.readValue() - linelight_right.readValue();
+        diff = linelight_left.readValue() - linelight_right.readValue();
+
         if(diff > light_threshold) return true;
         return false;
     }
@@ -26,23 +29,16 @@ public class AdjustRight  implements Behavior {
     }
 
     public void action() {
-        /*System.out.print("L: ");
-        System.out.print(linelight_left.readValue());
-        System.out.print(" R: ");
-        System.out.println(linelight_right.readValue());*/
-        //System.out.println("R");
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed((int)MotorL.getMaxSpeed());
-        MotorR.setSpeed((int)(MotorL.getMaxSpeed() * 0.7));
-        try
-        {
+        MotorL.setSpeed( (int)MotorL.getMaxSpeed() );
+        MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * (1.3*light_threshold) / diff) );
+/*
+        try{
             Thread.sleep(5);
         }
-        catch(InterruptedException e)
-        {
-
-        }
+        catch(InterruptedException e){}
+        */
     }
 }

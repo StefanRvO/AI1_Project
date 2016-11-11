@@ -25,9 +25,9 @@ public class CrossSectionDetector  extends Thread implements Behavior {
 
     private double last_diff = 0;
 
-    private RunningAverage RA_5 = new RunningAverage(frequency / 200, cross_light.readValue()); //5 ms
+    private RunningAverage RA_5 = new RunningAverage(frequency / 200, cross_light.readValue()); //2.5 ms    //was 100
     private RunningAverage RA_25 = new RunningAverage(frequency / 40, cross_light.readValue()); //50 ms
-    private RunningAverage RA_100 = new RunningAverage(frequency / 10, cross_light.readValue()); //100 ms
+    private RunningAverage RA_100 = new RunningAverage(frequency / 20, cross_light.readValue()); //100 ms   //was 10
 
     private int counter = 0;
 
@@ -41,14 +41,10 @@ public class CrossSectionDetector  extends Thread implements Behavior {
         {
             //if(i++ % 2000 == 0) System.out.println(i);
 
-            try
-            {
+            try{
                 Thread.sleep( (int)(1./frequency) * 1000 );
             }
-            catch(InterruptedException e)
-            {
-
-            }
+            catch(InterruptedException e){}
 
             int cur_val = cross_light.readValue();
 
@@ -81,9 +77,9 @@ public class CrossSectionDetector  extends Thread implements Behavior {
         cross_thread = new Thread(this);
         cross_thread.start();
     }
-    public void set_suspend_crossdector( int _times )
+    public void set_suspend_crossdector( int _timer )
     {
-        this.counter = _times;
+        this.counter = _timer;
     }
     public double get_last_diff()
     {
