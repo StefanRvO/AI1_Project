@@ -39,6 +39,8 @@ enum Move_Direction
     right,
     none,
 };
+
+unsigned char get_direction_char(Move_Direction &dir);
 Move_Direction get_reverse_direction(Move_Direction dir);
 
 
@@ -47,6 +49,7 @@ class Sokoban_Box;
 
 typedef std::pair<Move_Direction, Sokoban_Box *> move;
 
+std::ostream& operator<<(std::ostream& os, const move& the_move);
 
 class Sokoban_Box
 {
@@ -61,13 +64,13 @@ class Sokoban_Box
         Sokoban_Box *nb_down = nullptr;
         Sokoban_Box *nb_left = nullptr;
         Sokoban_Box *nb_right = nullptr;
-
         //Used for computing a move cost map
         float cost_to_box = 0;
         bool closed = false;
         Sokoban_Box *parent_node = nullptr;
         Move_Direction move_dir = Move_Direction::up; //Direction moved last to reach this box from the player
 
+        std::vector< std::vector < float > > *cost_map = nullptr; //Map of cost to reach each individual box on the map.
 
         //Set the neighbours. Should be called after a move as this, for performance
         //Reasons, is not done automatically
@@ -89,10 +92,12 @@ class Sokoban_Box
         //The move_box and player_box are given as pointer references.
         //During the call, these pointers will be changed to point to the new position
         //for the player and moved box.
+        void set_cost_map(std::vector< std::vector <float > > *_cost_map){ this->cost_map = _cost_map; }
+        float get_cost_to_box(Sokoban_Box &box);
         static void move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_Direction dir, bool reverse = false);
 
         static void change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_box);
-        bool is_moveable(Move_Direction dir);
+        bool is_moveable(Move_Direction dir) const;
         bool is_deadlocked();
         bool is_pullable(Move_Direction dir);
         bool is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
@@ -103,7 +108,8 @@ class Sokoban_Box
             os << "(" << box.pos.x_pos << "," << box.pos.y_pos << ")";
             return os;
         }
-        Sokoban_Box *get_neighbour(Move_Direction dir);
+        Sokoban_Box *get_neighbour(Move_Direction dir) const;
+        ~Sokoban_Box();
 
         Sokoban_Box(Box_Type _type, Position _pos);
         Sokoban_Box() {};
@@ -116,5 +122,4 @@ class Sokoban_Box
             }
             return first->cost_to_box < second->cost_to_box;
         }
-
 };

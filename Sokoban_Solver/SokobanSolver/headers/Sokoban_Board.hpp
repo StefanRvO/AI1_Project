@@ -6,6 +6,18 @@
 #include <map>
 #include <random>
 #include <set>
+#include <dlib/optimization/max_cost_assignment.h>
+
+//Cost added to specific move type
+#define LEFT_COST 0.
+#define RIGHT_COST 0.
+#define FORWARD_COST 0.
+#define BACKWARD_COST 0.
+
+#define MOVE_COST 1. //Cost added to all move types
+#define PUSH_COST 0. //Cost for pushing a box(added to the above moves)
+
+
 class Sokoban_Board;
 class Sokoban_Board
 {
@@ -19,10 +31,12 @@ class Sokoban_Board
         uint32_t size_x;
         uint32_t size_y;
         Sokoban_Box *upper_left_reachable = nullptr;
-        std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
-
-
         Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
+        Sokoban_Box *initial_player_box = nullptr;
+        std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
+        dlib::matrix<int> cost_matrix;
+
+
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
                                         //Made as an hash map for fast access to elements to delete and add.
                                         //May be a bit weird, and could maybe be changed to another container.
@@ -64,13 +78,14 @@ class Sokoban_Board
         std::string get_board_str(bool with_coords = false) const;
         void populate_neighbours();
         std::vector<move> find_possible_moves();
+        int *r = nullptr;
 
         void calc_reachable(Move_Direction last_move_dir);
         static void  find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
             std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
         void perform_move(move the_move, bool reverse = false, bool recalculate = true);
-        int32_t get_heuristic();
+        float get_heuristic();
         friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &_board)
         {
             os << _board.get_board_str();
@@ -85,4 +100,15 @@ class Sokoban_Board
         float get_move_cost(move the_move); //Returns the move cost based on the reachable map.
         float get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir);
         void calc_reachable_rec(Sokoban_Box *box);
+        std::vector<move> get_player_moves(const std::vector<move> &box_moves);
+        std::vector<move> get_player_moves(const move &box_move);
+        std::string get_move_string(const std::vector<move> &moves);
+        std::string get_reachable_map();
+        std::string get_reachable_str(Sokoban_Box &box);
+        void calculate_cost_map(Sokoban_Box &box);
+        bool calculate_cost_map_helper(const Sokoban_Box *this_box, Move_Direction dir,
+            std::vector<std::vector <float > > *cost_map);
+        void make_wavefront_maps();
+        float compute_minimum_cost_matching();
+        bool is_solved();
 };

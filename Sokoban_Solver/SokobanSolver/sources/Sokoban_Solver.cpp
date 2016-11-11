@@ -1,5 +1,6 @@
 #include <iostream>
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include "Sokoban_Board.hpp"
 #include "Solver.hpp"
 #include <exception>
@@ -14,6 +15,7 @@ int main(int argc, char **argv)
     po::options_description desc("Usage of Sokoban Solver");
     desc.add_options()
     ("board,b", po::value<std::string>()->required(), "The board to solve.")
+    ("alternative,a", "This will cause the solver to expect a string format in the SDU format.")
     ("help,h", "Print help messages");
     po::variables_map vm;
     try
@@ -29,6 +31,15 @@ int main(int argc, char **argv)
         if(vm.count("board"))
         {   //Grab the board.
             board_str = vm["board"].as<std::string>();
+        }
+        if(vm.count("alternative"))
+        {
+            //Convert the board str.
+            boost::replace_all(board_str, "X", "#");
+            boost::replace_all(board_str, ".", " ");
+            boost::replace_all(board_str, "J", "$");
+            boost::replace_all(board_str, "G", ".");
+            boost::replace_all(board_str, "M", "@");
         }
     }
     catch(po::error &e)

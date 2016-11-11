@@ -15,6 +15,13 @@ bool operator<(const Position &pos1, const Position &pos2)
 
 }
 
+std::ostream& operator<<(std::ostream& os, const move& the_move)
+{
+    os << "Move: (Dir:" << the_move.first << ", "<< *the_move.second << ")";
+    return os;
+}
+
+
 Move_Direction get_reverse_direction(Move_Direction dir)
 {
     switch (dir) {
@@ -22,14 +29,38 @@ Move_Direction get_reverse_direction(Move_Direction dir)
         case down: return up;
         case left: return right;
         case right: return left;
-        case none: assert(false);
+        case none: return none;
 
     }
     assert(false);
     return left;
 }
 
+float Sokoban_Box::get_cost_to_box(Sokoban_Box &box)
+{
+    return (*this->cost_map)[box.pos.x_pos][box.pos.y_pos];
+}
 
+unsigned char get_direction_char(Move_Direction &dir)
+{
+    switch(dir)
+    {
+        case up:    return 'u';
+        case down:  return 'd';
+        case left:  return 'l';
+        case right: return 'r';
+        case none:  return '-';
+    }
+    assert(false);
+    return ' ';
+}
+
+
+Sokoban_Box::~Sokoban_Box()
+{
+    if(this->cost_map)
+        delete this->cost_map;
+}
 
 Sokoban_Box::Sokoban_Box(Box_Type _type, Position _pos)
 {
@@ -96,7 +127,7 @@ void Sokoban_Box::change_types_in_move(Sokoban_Box &old_box, Sokoban_Box &new_bo
             break;
         default:
             std::cout << old_box.type << std::endl;
-            std::cout << old_box.pos.y_pos << " " << old_box.pos.x_pos << std::endl << std::endl;
+            std::cout << old_box.pos.x_pos << " " << old_box.pos.y_pos << std::endl << std::endl;
             assert(false);
     }
 }
@@ -129,23 +160,27 @@ void Sokoban_Box::move(Sokoban_Box * &move_box, Sokoban_Box * &player_box, Move_
     //First move the player, as the box may be moved to the player position.
     if(player_box != nullptr and player_box != new_player_pos)
         Sokoban_Box::change_types_in_move(*player_box, *new_player_pos);
+    //std::cout << "test" << std::endl;
     if(reverse)
         Sokoban_Box::change_types_in_move(*new_pos, *move_box);
     else
         Sokoban_Box::change_types_in_move(*move_box, *new_pos);
+    //std::cout << "test2" << std::endl;
 
     if(!reverse) move_box = new_pos;
     player_box = new_player_pos;
     //If we aren't reversing, and want to move the player, move the player one up now!
     if(!reverse && player_box != nullptr)
     {
+        //std::cout << "test3" << std::endl;
         Sokoban_Box::change_types_in_move(*player_box, *player_box->get_neighbour(dir));
+        //std::cout << "test4" << std::endl;
         player_box = player_box->get_neighbour(dir);
     }
 }
 
 
-bool Sokoban_Box::is_moveable(Move_Direction dir)
+bool Sokoban_Box::is_moveable(Move_Direction dir) const
 {
     switch(this->get_neighbour(dir)->type)
     {
@@ -170,7 +205,7 @@ bool Sokoban_Box::is_deadlocked()
     return false;
 }
 
-Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
+Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir) const
 {   //Return the pointer to the neighbour in the given direction
     switch(dir)
     {
@@ -178,10 +213,11 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir)
         case down: return this->nb_down;
         case left: return this->nb_left;
         case right: return this->nb_right;
+        case none: return const_cast<Sokoban_Box *> (this);
         default:
             assert(false);
     }
-    return this;
+    return const_cast<Sokoban_Box *> (this);
 }
 
 bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2)
