@@ -12,8 +12,8 @@ public class DecisionMaker  implements Behavior {
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
 
-    String lol = "ffffffffffffffff";
-    //String lol = "flflfrfrfrfrflfl";
+    //String lol = "ffffffffffffffff";
+    String lol = "flflfrfrfrfrflfl";
 
     int position = 0;
     public boolean takeControl()
@@ -56,9 +56,20 @@ public class DecisionMaker  implements Behavior {
         suppressed = false;
         //TODO: Do something so it can be allowed to drive forward if there
         //      are multiple forward commands.
-        MotorL.stop(true);
-        MotorR.stop(true);
-        while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+        if( this.lol.charAt(this.position) != 'f' ){
+            MotorL.setSpeed( (int)MotorL.getMaxSpeed() );
+            MotorR.setSpeed( (int)MotorL.getMaxSpeed() );
+
+            try{
+                Thread.sleep( 250 );
+            }
+            catch(InterruptedException e){}
+
+            MotorL.stop(true);
+            MotorR.stop(true);
+            while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+            //while(true);
+        }
 
         return;
     }

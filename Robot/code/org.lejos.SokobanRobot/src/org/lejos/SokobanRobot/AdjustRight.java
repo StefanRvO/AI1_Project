@@ -8,7 +8,7 @@ import lejos.robotics.subsumption.Behavior;
 
 
 public class AdjustRight  implements Behavior {
-    private int light_threshold = 5;
+    private int light_threshold = 10;
     private boolean suppressed = false;
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
@@ -32,13 +32,30 @@ public class AdjustRight  implements Behavior {
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
+
         MotorL.setSpeed( (int)MotorL.getMaxSpeed() );
-        MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * (1.3*light_threshold) / diff) );
-/*
+        if(diff < 20)
+        {
+            double multiplier = (double)(light_threshold) / (diff);
+            if(multiplier > 0.8) multiplier = 0.8;
+            MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
+        }
+        else if(diff < 30)
+        {
+            double multiplier = (double)(light_threshold) / (diff * 1.5);
+            if(multiplier > 0.8) multiplier = 0.8;
+            MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
+        }
+        else
+        {
+            double multiplier = (double)(light_threshold) / (diff * 2);
+            if(multiplier > 0.8) multiplier = 0.8;
+            MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
+        }
+        
         try{
             Thread.sleep(5);
         }
         catch(InterruptedException e){}
-        */
     }
 }

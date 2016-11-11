@@ -55,17 +55,12 @@ public class CrossSectionDetector  extends Thread implements Behavior {
 
             //System.out.println( cur_val );
 
-            if(last_diff > 5 && !cross_section && this.counter == 0){
-                System.out.print("CX - ");
-                System.out.println((int)(last_diff));
+            if(last_diff > 10 && !cross_section && this.counter == 0){
                 cross_section = true;
             }
 
             if( this.counter > 0 ){
                 this.counter--;
-                if( this.counter == 0 ){
-                    System.out.println("COUNTER");
-                }
             }
 
             //if(cur_val < 55 && last_light_val >= 55) cross_section = true;

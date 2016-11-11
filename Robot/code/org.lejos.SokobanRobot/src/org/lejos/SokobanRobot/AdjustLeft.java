@@ -8,7 +8,7 @@ import lejos.robotics.subsumption.Behavior;
 
 
 public class AdjustLeft  implements Behavior {
-    private int light_threshold = 5;
+    private int light_threshold = 10;
     private boolean suppressed = false;
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
@@ -21,9 +21,11 @@ public class AdjustLeft  implements Behavior {
         diff = linelight_right.readValue() - linelight_left.readValue();
 
         if( diff > light_threshold ){
+            /*
             System.out.print( diff );
             System.out.print("\t");
-            System.out.println( (int)(100*(1.3*light_threshold) / diff) );
+            System.out.println( (int)(100*(light_threshold) / diff) );
+            */
             return true;
         }
         return false;
@@ -42,14 +44,29 @@ public class AdjustLeft  implements Behavior {
         //      Mean that the difference is, the slower should the wheel turn.
         //      For ratio=1, maxSpeed * ratio would be forward.
         //      For ratio=0, maxSpeed * ratio, should mean the wheel doesn't turn at all.
-
-        MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * ( (1.2*light_threshold) / diff) ) );
+        if(diff < 20)
+        {
+            double multiplier = (double)(light_threshold) / (diff);
+            if(multiplier > 0.8) multiplier = 0.8;
+            MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
+        }
+        else if(diff < 30)
+        {
+            double multiplier = (double)(light_threshold) / (diff * 1.5);
+            if(multiplier > 0.8) multiplier = 0.8;
+            MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
+        }
+        else
+        {
+            double multiplier = (double)(light_threshold) / (diff * 2);
+            if(multiplier > 0.8) multiplier = 0.8;
+            MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
+        }
         MotorR.setSpeed( (int)MotorL.getMaxSpeed() );
-/*
+
         try{
             Thread.sleep(5);
         }
         catch(InterruptedException e){}
-        */
     }
 }

@@ -80,9 +80,14 @@ public class Turn  extends Thread implements Behavior {
         {
             try
             {
-                Thread.sleep(300); //Wait to turn away from line
+                Thread.sleep(500); //Wait to turn away from line
                 RA_R.fill_with_samples(linelight_right.readValue());
                 RA_L.fill_with_samples(linelight_left.readValue());
+                if(false){
+                    MotorL.setSpeed(0);
+                    MotorR.setSpeed(0);
+                    while(true);
+                }
             }
             catch(InterruptedException e) { }
 
@@ -95,18 +100,29 @@ public class Turn  extends Thread implements Behavior {
 
                 RA_R.add_sample(linelight_right.readValue());
                 RA_L.add_sample(linelight_left.readValue());
-
-                System.out.println( Math.abs( RA_R.get_average() - RA_L.get_average() ) );
-
             }
 
-            cross_detector.set_suspend_crossdector( 300 );
+            while(Math.abs(RA_R.get_average() - RA_L.get_average()) > 5)
+            {
+                try {
+                    Thread.sleep((int)(1./this.frequency) * 1000);
+                }
+                catch(InterruptedException e) { }
+
+                RA_R.add_sample(linelight_right.readValue());
+                RA_L.add_sample(linelight_left.readValue());
+            }
+
+            cross_detector.set_suspend_crossdector( 250 );
             this.turn_count--;
             if(this.turn_count > 0){
                 cross_detector.unset_cross_section();
             }
-
         }
+        MotorL.stop(true);
+        MotorR.stop(true);
+        while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+        Button.waitForAnyPress();
     }
 
     public Boolean turning()
