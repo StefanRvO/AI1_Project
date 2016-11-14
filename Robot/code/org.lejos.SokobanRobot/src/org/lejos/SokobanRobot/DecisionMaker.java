@@ -18,8 +18,8 @@ public class DecisionMaker  implements Behavior {
     //String lol = "flfrfrfrfrflflfbrfrflflflflfrfrb";  // 8-tal STORT
     //String lol = "flfrfrfrfrflflfl";  // 8-tal    <- awesome
     //String lol = "flflflfl"; // Kasse <- slightly less awesome
-    //String lol = "flflflflbfrfrfrfrb"; // Kasse <- Med baglæns
-    String lol = "ffbrfrfrffb";
+    String lol = "flflflflbfrfrfrfrb"; // Kasse <- Med baglæns
+    //String lol = "ffbrfrfrffb";
 
     public boolean takeControl()
     {
