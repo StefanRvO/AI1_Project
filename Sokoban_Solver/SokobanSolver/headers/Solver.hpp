@@ -12,6 +12,7 @@ class Solver
     public:
         Solver(Sokoban_Board *_board);
         bool solve();
+        uint32_t get_visited_nodes();
     private:
         uint32_t visited_nodes = 0;
         //std::priority_queue<state_entry *, std::vector<state_entry *>, state_entry> open_list;
@@ -19,7 +20,6 @@ class Solver
         TransmutationTable ttable;
         std::vector<move> moves_from_init;
         std::vector<move> moves_from_goal;
-
         Sokoban_Board *board = nullptr;
         state_entry *A_star_solve();
         int32_t IDA_star_solve();

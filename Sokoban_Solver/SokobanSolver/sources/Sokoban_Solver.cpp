@@ -5,11 +5,22 @@
 #include "Solver.hpp"
 #include <exception>
 #include "DeadLockDetector.hpp"
+#include <csignal>
+
 namespace po = boost::program_options;
+
+Solver *the_solver = nullptr;
+
+void signal_handler(int signal)
+{
+    if(signal == SIGUSR1)
+        std::cout << std::endl << "Visited nodes " << the_solver->get_visited_nodes() << std::endl << std::endl;
+}
 
 
 int main(int argc, char **argv)
 {
+    std::signal(SIGUSR1, signal_handler);
     std::string board_str;
     //Setup Command line options.
     po::options_description desc("Usage of Sokoban Solver");
@@ -57,9 +68,9 @@ int main(int argc, char **argv)
     //    std::cout << board.get_heuristic() << std::endl;
         //Create the solver
         Solver SSolver(&board);
+        the_solver = &SSolver;
         //Solve
         SSolver.solve();
-
         std::cout << board << std::endl;
     }
     catch(std::exception &e)

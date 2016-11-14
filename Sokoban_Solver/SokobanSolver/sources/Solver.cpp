@@ -75,11 +75,17 @@ bool Solver::solve()
     return true;
 }
 
+uint32_t Solver::get_visited_nodes()
+{
+    return this->visited_nodes;
+}
+
 state_entry *Solver::A_star_solve()
 {
     //Solve the sokoban puzzle using an A* algorithm
     std::list<float> move_costs;
     //Add initial state to ttable and open list
+    std::cout << std::fixed << std::setprecision(1);
     move init_move = move(Move_Direction::none, this->board->player_box);
     state_entry *current = nullptr;
     float h = 0;
