@@ -10,6 +10,8 @@ public class DriveForward  implements Behavior {
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
 
+    private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
+
     public boolean takeControl() {
         return true;
     }
@@ -22,8 +24,9 @@ public class DriveForward  implements Behavior {
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed((int)MotorL.getMaxSpeed());
-        MotorR.setSpeed((int)MotorL.getMaxSpeed());
+        MotorL.setSpeed(maxSpeed);
+        MotorR.setSpeed(maxSpeed);
+
         try{
             Thread.sleep(5);
         }

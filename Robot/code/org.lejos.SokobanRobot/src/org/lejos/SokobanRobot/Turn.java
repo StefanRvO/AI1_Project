@@ -24,28 +24,28 @@ public class Turn  extends Thread implements Behavior {
     public Direction direction = Direction.none;
     public int turn_count;
     private static Turn instance = null;
+    private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
+
     public boolean takeControl()
     {
-        if(turn_count > 0){
-            //System.out.println(turn_count);
+        if(turn_count > 0)
             return true;
-        }
-        else
-            return false;
+        return false;
     }
 
-    protected Turn()
-    {
-
+    protected Turn(){
     }
+
     public static Turn getInstance()
     {
         if(instance == null) instance = new Turn();
         return instance;
     }
+
     public void suppress() {
         suppressed = true;
     }
+
     public void doTurn(Direction _direction, int _turn_count)
     {
         this.direction = _direction;
@@ -53,20 +53,18 @@ public class Turn  extends Thread implements Behavior {
     }
 
     public void action() {
-        if(this.direction == Direction.left)
-        {
+        if(this.direction == Direction.left){
             System.out.println("Turning left");
             MotorL.backward();
             MotorR.forward();
         }
-        else if(this.direction == Direction.right)
-        {
+        else if(this.direction == Direction.right){
             System.out.println("Turning right");
             MotorL.forward();
             MotorR.backward();
         }
-        MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * 0.50)); //TODO: Make constant speed, should not depend on voltage.
-        MotorR.setSpeed( (int)(MotorL.getMaxSpeed() * 0.50)); //TODO: Make constant speed, should not depend on voltage.
+        MotorL.setSpeed( (int)(maxSpeed * 0.50)); //TODO: Make constant speed, should not depend on voltage.
+        MotorR.setSpeed( (int)(maxSpeed * 0.50)); //TODO: Make constant speed, should not depend on voltage.
         //Wait a moment to make sure that we have turned of from the crossSection
         wait_for_new_crossection();
 
@@ -80,53 +78,61 @@ public class Turn  extends Thread implements Behavior {
         {
             try
             {
-                Thread.sleep(500); //Wait to turn away from line
+                /*
+                *   2016-11-14
+                *   The sleep time is tested,
+                *   and the robot does turn far enough away from the black line
+                */
+
+                Thread.sleep(450); //Wait to turn away from line
                 RA_R.fill_with_samples(linelight_right.readValue());
                 RA_L.fill_with_samples(linelight_left.readValue());
+
                 if(false){
                     MotorL.setSpeed(0);
                     MotorR.setSpeed(0);
                     while(true);
                 }
             }
-            catch(InterruptedException e) { }
+            catch(InterruptedException e) {}
 
             while(Math.abs(RA_R.get_average() - RA_L.get_average()) < 15)
             {
                 try {
                     Thread.sleep((int)(1./this.frequency) * 1000);
                 }
-                catch(InterruptedException e) { }
+                catch(InterruptedException e){}
 
                 RA_R.add_sample(linelight_right.readValue());
                 RA_L.add_sample(linelight_left.readValue());
             }
 
-            while(Math.abs(RA_R.get_average() - RA_L.get_average()) > 5)
+            while(Math.abs(RA_R.get_average() - RA_L.get_average()) > 10)
             {
                 try {
                     Thread.sleep((int)(1./this.frequency) * 1000);
                 }
-                catch(InterruptedException e) { }
+                catch(InterruptedException e){}
 
                 RA_R.add_sample(linelight_right.readValue());
                 RA_L.add_sample(linelight_left.readValue());
             }
 
-            cross_detector.set_suspend_crossdector( 250 );
-            this.turn_count--;
+            cross_detector.set_suspend_crossdector( 300 );
+
             if(this.turn_count > 0){
+                this.turn_count--;
                 cross_detector.unset_cross_section();
             }
         }
-        MotorL.stop(true);
-        MotorR.stop(true);
-        while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
-        Button.waitForAnyPress();
+
+            MotorL.stop(true);
+            MotorR.stop(true);
+            while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+            //Button.waitForAnyPress();
     }
 
-    public Boolean turning()
-    {
+    public Boolean turning(){
         return this.turn_count > 0;
     }
 

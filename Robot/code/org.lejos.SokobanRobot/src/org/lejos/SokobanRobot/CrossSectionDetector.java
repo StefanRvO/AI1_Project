@@ -37,10 +37,13 @@ public class CrossSectionDetector  extends Thread implements Behavior {
     public void run()
     {
         int i = 0;
+
+        RA_5.fill_with_samples(cross_light.readValue());
+        RA_25.fill_with_samples(cross_light.readValue());
+        RA_100.fill_with_samples(cross_light.readValue());
+
         while(!stop)
         {
-            //if(i++ % 2000 == 0) System.out.println(i);
-
             try{
                 Thread.sleep( (int)(1./frequency) * 1000 );
             }
@@ -51,9 +54,8 @@ public class CrossSectionDetector  extends Thread implements Behavior {
             RA_5.add_sample(cur_val);
             RA_25.add_sample(cur_val);
             RA_100.add_sample(cur_val);
-            last_diff = RA_100.get_average() - RA_5.get_average();
 
-            //System.out.println( cur_val );
+            last_diff = RA_100.get_average() - RA_5.get_average();
 
             if(last_diff > 10 && !cross_section && this.counter == 0){
                 cross_section = true;
@@ -62,9 +64,6 @@ public class CrossSectionDetector  extends Thread implements Behavior {
             if( this.counter > 0 ){
                 this.counter--;
             }
-
-            //if(cur_val < 55 && last_light_val >= 55) cross_section = true;
-            //last_light_val = cur_val;
         }
     }
     protected CrossSectionDetector()

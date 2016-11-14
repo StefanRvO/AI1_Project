@@ -16,18 +16,12 @@ public class AdjustLeft  implements Behavior {
     LightSensor linelight_left = new LightSensor(SensorPort.S4);
 
     private int diff = linelight_right.readValue() - linelight_left.readValue();
+    private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
 
     public boolean takeControl() {
         diff = linelight_right.readValue() - linelight_left.readValue();
 
-        if( diff > light_threshold ){
-            /*
-            System.out.print( diff );
-            System.out.print("\t");
-            System.out.println( (int)(100*(light_threshold) / diff) );
-            */
-            return true;
-        }
+        if( diff > light_threshold ) return true;
         return false;
     }
 
@@ -37,32 +31,28 @@ public class AdjustLeft  implements Behavior {
 
     public void action() {
         suppressed = false;
+
+        double thres = 0.9;
+
+        if(diff < 15){
+            double multiplier = (double)(light_threshold) / (diff);
+            if(multiplier > thres) multiplier = thres;
+            MotorR.setSpeed( (int)(maxSpeed * multiplier ) );
+        }
+        else if(diff < 25){
+            double multiplier = (double)(light_threshold) / (diff * 1.6);
+            if(multiplier > thres) multiplier = thres;
+            MotorR.setSpeed( (int)(maxSpeed * multiplier ) );
+        }
+        else{
+            double multiplier = (double)(light_threshold) / (diff * 2.1);
+            if(multiplier > thres) multiplier = thres;
+            MotorR.setSpeed( (int)(maxSpeed * multiplier ) );
+        }
+        MotorL.setSpeed( maxSpeed );
+
         MotorL.forward();
         MotorR.forward();
-
-        //  The adjust speed needs to be inversely proportional.
-        //      Mean that the difference is, the slower should the wheel turn.
-        //      For ratio=1, maxSpeed * ratio would be forward.
-        //      For ratio=0, maxSpeed * ratio, should mean the wheel doesn't turn at all.
-        if(diff < 20)
-        {
-            double multiplier = (double)(light_threshold) / (diff);
-            if(multiplier > 0.8) multiplier = 0.8;
-            MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
-        }
-        else if(diff < 30)
-        {
-            double multiplier = (double)(light_threshold) / (diff * 1.5);
-            if(multiplier > 0.8) multiplier = 0.8;
-            MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
-        }
-        else
-        {
-            double multiplier = (double)(light_threshold) / (diff * 2);
-            if(multiplier > 0.8) multiplier = 0.8;
-            MotorL.setSpeed( (int)(MotorL.getMaxSpeed() * multiplier ) );
-        }
-        MotorR.setSpeed( (int)MotorL.getMaxSpeed() );
 
         try{
             Thread.sleep(5);
