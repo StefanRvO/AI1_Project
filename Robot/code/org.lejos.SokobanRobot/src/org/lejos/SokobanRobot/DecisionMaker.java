@@ -13,12 +13,13 @@ public class DecisionMaker  implements Behavior {
     private CrossSectionDetector cross_detector = CrossSectionDetector.getInstance();
     private Turn turner = Turn.getInstance();
     private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
+    private int position = 0;
 
-    //String lol = "ffffffffffffffff";
-    //String lol = "flflfrfrfrfrflfl";
-    String lol = "flflflflflflflfl";
-
-    int position = 0;
+    //String lol = "flfrfrfrfrflflfbrfrflflflflfrfrb";  // 8-tal STORT
+    //String lol = "flfrfrfrfrflflfl";  // 8-tal    <- awesome
+    //String lol = "flflflfl"; // Kasse <- slightly less awesome
+    //String lol = "flflflflbfrfrfrfrb"; // Kasse <- Med baglæns
+    String lol = "ffbrfrfrffb";
 
     public boolean takeControl()
     {
@@ -35,24 +36,32 @@ public class DecisionMaker  implements Behavior {
     public void action() {
         try{
             System.out.println("Detected cross section!");
-            System.out.println(this.lol.charAt(this.position));
+            System.out.println( this.lol.charAt(this.position) );
         }
-        catch(Exception e){ this.position = 0; }
+        catch(Exception e){}
 
         if (this.lol.charAt(this.position) == 'f'){
-            position++;
             cross_detector.unset_cross_section();
         }
         else if(this.lol.charAt(this.position) == 'l'){
-            position++;
             cross_detector.unset_cross_section();
             turner.doTurn(Direction.left, 1);
         }
         else if(this.lol.charAt(this.position) == 'r'){
-            position++;
             cross_detector.unset_cross_section();
             turner.doTurn(Direction.right, 1);
         }
+        else if(this.lol.charAt(this.position) == 'b'){
+            cross_detector.unset_cross_section();
+            turner.doTurn(Direction.back, 1);
+        }
+
+        if( this.position == this.lol.length()-1 ){
+            //position = 0;
+        }else{
+            this.position++;
+        }
+
         suppressed = false;
 
         if( this.lol.charAt(this.position) != 'f' ){

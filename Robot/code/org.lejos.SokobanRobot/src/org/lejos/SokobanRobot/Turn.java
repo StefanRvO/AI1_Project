@@ -53,6 +53,21 @@ public class Turn  extends Thread implements Behavior {
     }
 
     public void action() {
+        MotorL.setSpeed( (int)(maxSpeed * 0.50));
+        MotorR.setSpeed( (int)(maxSpeed * 0.50));
+
+        if(this.direction == Direction.back){
+            System.out.println("Doing a 180");
+            MotorL.backward();
+            MotorR.backward();
+
+            try{
+                Thread.sleep(1000);
+            }
+            catch(InterruptedException e){}
+            this.direction = Direction.right;
+        }
+
         if(this.direction == Direction.left){
             System.out.println("Turning left");
             MotorL.backward();
@@ -63,8 +78,7 @@ public class Turn  extends Thread implements Behavior {
             MotorL.forward();
             MotorR.backward();
         }
-        MotorL.setSpeed( (int)(maxSpeed * 0.50)); //TODO: Make constant speed, should not depend on voltage.
-        MotorR.setSpeed( (int)(maxSpeed * 0.50)); //TODO: Make constant speed, should not depend on voltage.
+
         //Wait a moment to make sure that we have turned of from the crossSection
         wait_for_new_crossection();
 
@@ -118,7 +132,7 @@ public class Turn  extends Thread implements Behavior {
                 RA_L.add_sample(linelight_left.readValue());
             }
 
-            cross_detector.set_suspend_crossdector( 300 );
+            cross_detector.set_suspend_crossdector( 100 );
 
             if(this.turn_count > 0){
                 this.turn_count--;
