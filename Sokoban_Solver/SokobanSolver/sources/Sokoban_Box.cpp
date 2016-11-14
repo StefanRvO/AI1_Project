@@ -240,6 +240,20 @@ bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction d
     return false;
 }
 
+uint8_t Sokoban_Box::get_moveable_count() const
+{   //Return how many direction the box can be moved in, when not considering the man position
+    uint8_t sum = 0;
+    if(this->is_moveable(Move_Direction::up) &&
+        !this->get_neighbour(Move_Direction::down)->is_solid()) sum++;
+    if(this->is_moveable(Move_Direction::down) &&
+        !this->get_neighbour(Move_Direction::up)->is_solid()) sum++;
+    if(this->is_moveable(Move_Direction::left) &&
+        !this->get_neighbour(Move_Direction::right)->is_solid()) sum++;
+    if(this->is_moveable(Move_Direction::right) &&
+        !this->get_neighbour(Move_Direction::left)->is_solid()) sum++;
+    return sum;
+}
+
 bool Sokoban_Box::is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir)
 {
     //std::cout << "visted: " << *this << std::endl;
@@ -317,5 +331,107 @@ bool Sokoban_Box::is_solid() const
             return true;
         default:
             return false;
+    }
+}
+
+bool Sokoban_Box::is_in_deadlock_zone() const
+{
+    switch(this->type)
+    {
+        case DeadLock_Zone_Free:
+        case DeadLock_Zone_Free_Searched:
+        case DeadLock_Zone_Player:
+            return true;
+        default:
+            return false;
+    }
+
+}
+
+bool Sokoban_Box::is_tunnel() const
+{
+    return this->is_tunnel(Orientation::Horizontal) || this->is_tunnel(Orientation::Vertical);
+}
+
+bool Sokoban_Box::is_tunnel(Orientation orientation) const
+{
+    if(orientation == Orientation::Horizontal)
+    {
+        return (this->nb_up->is_solid() || this->nb_up->is_in_deadlock_zone()) &&
+         (this->nb_down->is_solid() || this->nb_down->is_in_deadlock_zone());
+    }
+
+    if(orientation == Orientation::Vertical)
+    {
+        return (this->nb_left->is_solid() || this->nb_left->is_in_deadlock_zone()) &&
+         (this->nb_right->is_solid() || this->nb_right->is_in_deadlock_zone());
+    }
+    return false;
+}
+
+void Sokoban_Box::insert_player()
+{
+    switch(this->type)
+    {
+        case Goal:
+            this->type = Player_On_Goal;
+        break;
+        case Free:
+            this->type = Player;
+        break;
+        case DeadLock_Zone_Free:
+            this->type = DeadLock_Zone_Player;
+        break;
+        default:
+        assert(false);
+    }
+}
+
+void Sokoban_Box::remove_player()
+{
+    switch(this->type)
+    {
+        case Player:
+            this->type = Free;
+        break;
+        case Player_On_Goal:
+            this->type = Goal;
+        break;
+        case DeadLock_Zone_Player:
+            this->type = DeadLock_Zone_Free;
+        break;
+        default:
+        assert(false);
+    }
+}
+
+void Sokoban_Box::insert_box()
+{
+    switch(this->type)
+    {
+        case Goal:
+            this->type = Goal_Box;
+        break;
+        case Free:
+            this->type = Box;
+        break;
+        default:
+        assert(false);
+    }
+}
+
+
+void Sokoban_Box::remove_box()
+{
+    switch(this->type)
+    {
+        case Goal_Box:
+            this->type = Goal;
+        break;
+        case Box:
+            this->type = Free;
+        break;
+        default:
+        assert(false);
     }
 }

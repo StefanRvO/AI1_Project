@@ -93,7 +93,7 @@ class Sokoban_Board
         }
         //Static functions
         static Box_Type parse_char(char chr);
-        static char get_box_char(Box_Type type);
+        static char get_box_char(const Sokoban_Box &box);
         static std::vector <Sokoban_Box> parse_row(const std::string &row_str, uint32_t y_pos);
         bool is_reachable(Sokoban_Box *box) const;
         void calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current, float edge_cost, Move_Direction move_dir);

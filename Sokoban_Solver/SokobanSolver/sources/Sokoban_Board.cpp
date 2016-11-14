@@ -11,7 +11,7 @@
 #include <cctype>
 #include <cstdio>
 #include "DeadLockDetector.hpp"
-
+#include "TunnelMacroCreator.hpp"
 
 
 uint8_t get_digits(uint32_t x)
@@ -40,8 +40,19 @@ Box_Type Sokoban_Board::parse_char(char chr)
     }
 }
 
-char Sokoban_Board::get_box_char(Box_Type type)
+char Sokoban_Board::get_box_char(const Sokoban_Box &box)
 {
+    const Box_Type &type = box.type;
+    switch(box.tunnel_type)
+    {
+        case None:
+            break;
+        case One_Way:
+            return '-';
+        case Two_Way:
+            return '=';
+    }
+
     switch(type)
     {
         case Wall:            return '#';
@@ -162,7 +173,8 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
 //    std::cout << get_board_str(true) << std::endl;
     cost_matrix = dlib::matrix<int>(this->board_boxes.size(), this->board_boxes.size());
     this->make_wavefront_maps();
-    this->compute_minimum_cost_matching();
+    TunnelMacroCreator macroCreator(this);
+    macroCreator.compute_macros();
     //std::cout << get_reachable_map() << std::endl;
 }
 
@@ -207,7 +219,7 @@ void Sokoban_Board::make_wavefront_maps()
 
     }
 
-    //Restor boxes and player
+    //Restore boxes and player
     this->player_box->type = types.back();
     types.pop_back();
     uint32_t i = 0;
@@ -231,7 +243,7 @@ std::string Sokoban_Board::get_board_str(bool with_coords) const
         }
         for(uint32_t x = 0; x < this->size_x; x++)
         {
-            row_str += Sokoban_Board::get_box_char(this->board[x][y].type);
+            row_str += Sokoban_Board::get_box_char(this->board[x][y]);
         }
         board_str += row_str;
         board_str += "\n";

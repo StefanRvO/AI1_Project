@@ -14,7 +14,8 @@ Solver *the_solver = nullptr;
 void signal_handler(int signal)
 {
     if(signal == SIGUSR1)
-        std::cout << std::endl << "Visited nodes " << the_solver->get_visited_nodes() << std::endl << std::endl;
+        std::cout << std::endl << "Visited nodes " << the_solver->get_visited_nodes() << std::endl <<
+        "TTable size " <<the_solver->ttable_size() << std::endl << std::endl;
 }
 
 
@@ -72,6 +73,8 @@ int main(int argc, char **argv)
         //Solve
         SSolver.solve();
         std::cout << board << std::endl;
+        std::cout << std::endl << "Visited nodes " << the_solver->get_visited_nodes() << std::endl <<
+        "TTable size " <<the_solver->ttable_size() << std::endl << std::endl;
     }
     catch(std::exception &e)
     {

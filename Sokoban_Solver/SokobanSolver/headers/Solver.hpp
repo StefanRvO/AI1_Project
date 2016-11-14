@@ -13,6 +13,7 @@ class Solver
         Solver(Sokoban_Board *_board);
         bool solve();
         uint32_t get_visited_nodes();
+        uint32_t ttable_size();
     private:
         uint32_t visited_nodes = 0;
         //std::priority_queue<state_entry *, std::vector<state_entry *>, state_entry> open_list;

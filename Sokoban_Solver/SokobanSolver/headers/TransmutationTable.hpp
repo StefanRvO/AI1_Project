@@ -114,6 +114,7 @@ struct bucket
         this_node = &entries.back();
         return new_entry.heuristic;
     }
+
     float fake_heuristic(state_entry *entry)
     {
         /*if(entry->full_key == 36882296192643268) return 150.;
@@ -125,6 +126,10 @@ struct bucket
         if(entry->full_key == 36882296175866051) return 144.;
         if(entry->full_key == 36882296175866051) return 144.;*/
         return entry->heuristic;
+    }
+    uint32_t get_size()
+    {
+        return this->entries.size();
     }
 };
 
@@ -148,11 +153,17 @@ class TransmutationTable
     state_entry *get_entry(const Sokoban_Board &board);
 
     //check if this state already exists in the table.
-    //If it exists, and the saved state has a lower cost than the given cost, return false, meaning
+    //If it exists, and the saved state has a lower or equal cost than the given cost, return false, meaning
     //that we should not search from here, as a shorter path to this state exists.
     //If it exists, and the saved state has a higher cost, owerwrite the saved cost with the new,
     //And return true. Replace the value pointed to by heuristic with the saved heuristic.
     //If it does not exist, return true, calculate a new heuristic and put it in the memory given in the pointer.
     bool check_table(const Sokoban_Board &board, float cost_to_state, float *heuristic,
         move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node);
+    uint32_t get_size()
+    {
+        uint32_t total_size = 0;
+        for(uint32_t i = 0; i < this->table_size; i++) total_size += table[i].get_size();
+        return total_size;
+    }
 };

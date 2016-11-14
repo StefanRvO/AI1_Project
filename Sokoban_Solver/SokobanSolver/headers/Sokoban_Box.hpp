@@ -3,8 +3,14 @@
 #include <vector>
 #include <utility>
 #include <ostream>
-
+#include "Sokoban_Move.hpp"
+#include "enums.hpp"
 //A box defining a field on the Sokoban board
+
+
+class Sokoban_Move;
+typedef Sokoban_Move move;
+
 struct Position
 {
     uint32_t x_pos;
@@ -15,39 +21,12 @@ struct Position
 bool operator<(const Position &pos1, const Position &pos2);
 
 
-enum Box_Type : uint8_t
-{
-    Box, //A box which is not yet placed upon a goal $
-    Goal_Box, //A box placed upon a goal *
-    Goal, //A goal to place boxes on .
-    Wall, //Wall #
-    Player, //Player. @
-    Player_On_Goal, //Player standing on a goal square. +
-    Free, //Free space. (Space)/-/_
-    Free_Searched, //Free space, but searched. Used when finding moves.
-    Goal_Searched, //Goal, but searched. Used when finding moves.
-    DeadLock_Zone_Free, //Blocks which, if a box would be placed there, it would cause a deadlock.
-    DeadLock_Zone_Free_Searched,
-    DeadLock_Zone_Player,
-};
-
-enum Move_Direction
-{
-    up,
-    down,
-    left,
-    right,
-    none,
-};
-
 unsigned char get_direction_char(Move_Direction &dir);
 Move_Direction get_reverse_direction(Move_Direction dir);
 
 
 class Sokoban_Box;
 
-
-typedef std::pair<Move_Direction, Sokoban_Box *> move;
 
 std::ostream& operator<<(std::ostream& os, const move& the_move);
 
@@ -72,6 +51,8 @@ class Sokoban_Box
 
         std::vector< std::vector < float > > *cost_map = nullptr; //Map of cost to reach each individual box on the map.
 
+        Tunnel_Type tunnel_type = None;
+        Orientation tunnel_orientation = Horizontal;
         //Set the neighbours. Should be called after a move as this, for performance
         //Reasons, is not done automatically
         void set_neighbours(Sokoban_Box *_nb_up, Sokoban_Box *_nb_down,
@@ -110,10 +91,13 @@ class Sokoban_Box
         }
         Sokoban_Box *get_neighbour(Move_Direction dir) const;
         ~Sokoban_Box();
-
+        uint8_t get_moveable_count() const;
         Sokoban_Box(Box_Type _type, Position _pos);
         Sokoban_Box() {};
         bool is_solid() const;
+        bool is_in_deadlock_zone() const;
+        bool is_tunnel() const;
+        bool is_tunnel(Orientation orientation) const;
         bool operator() (Sokoban_Box *first, Sokoban_Box *second)
         {
             if(first->cost_to_box == second->cost_to_box)
@@ -122,4 +106,9 @@ class Sokoban_Box
             }
             return first->cost_to_box < second->cost_to_box;
         }
+        void insert_player();
+        void remove_player();
+        void insert_box();
+        void remove_box();
+
 };
