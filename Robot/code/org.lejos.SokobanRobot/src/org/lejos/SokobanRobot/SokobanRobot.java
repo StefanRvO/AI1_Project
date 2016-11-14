@@ -16,11 +16,11 @@ public class SokobanRobot {
         crosslight.setFloodlight(true);
         linelight_right.setFloodlight(true);
         linelight_left.setFloodlight(true);
-        Behavior b1_drive = new DriveForward();
-        Behavior ajust_left = new AdjustLeft();
-        Behavior ajust_right = new AdjustRight();
+        Behavior b1_drive = DriveForward.getInstance();
+        Behavior ajust_left = AdjustLeft.getInstance();
+        Behavior ajust_right = AdjustRight.getInstance();
         Behavior cross_detector = CrossSectionDetector.getInstance();
-        Behavior decision_maker = new DecisionMaker();
+        Behavior decision_maker = DecisionMaker.getInstance();
         Behavior turner = Turn.getInstance();
         //BlueToothCom com = new BlueToothCom();
         Behavior [] b_array = {b1_drive, ajust_left, ajust_right, cross_detector, turner, decision_maker};

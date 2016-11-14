@@ -7,16 +7,12 @@ import lejos.robotics.subsumption.Behavior;
 
 
 
-public class AdjustLeft  implements Behavior {
+public class AdjustLeft  extends DriveForward implements Behavior {
     private int light_threshold = 10;
-    private boolean suppressed = false;
-    NXTRegulatedMotor MotorL = Motor.A;
-    NXTRegulatedMotor MotorR = Motor.C;
     LightSensor linelight_right = new LightSensor(SensorPort.S3);
     LightSensor linelight_left = new LightSensor(SensorPort.S4);
-
     private int diff = linelight_right.readValue() - linelight_left.readValue();
-    private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
+    protected static AdjustLeft inherited_instance = null;
 
     public boolean takeControl() {
         diff = linelight_right.readValue() - linelight_left.readValue();
@@ -25,9 +21,20 @@ public class AdjustLeft  implements Behavior {
         return false;
     }
 
+    public static AdjustLeft getInstance()
+    {
+        if(inherited_instance == null) inherited_instance = new AdjustLeft();
+        return inherited_instance;
+    }
+
+    protected AdjustLeft()
+    {
+    }
+
     public void suppress() {
         suppressed = true;
     }
+
 
     public void action() {
         suppressed = false;
@@ -53,7 +60,10 @@ public class AdjustLeft  implements Behavior {
 
         MotorL.forward();
         MotorR.forward();
-
+        if(test_degrees())
+        {
+            this.the_brain.inform_can_placed();
+        }
         try{
             Thread.sleep(5);
         }

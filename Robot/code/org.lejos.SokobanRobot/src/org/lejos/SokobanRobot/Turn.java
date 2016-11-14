@@ -18,6 +18,7 @@ public class Turn  extends Thread implements Behavior {
     RunningAverage RA_L =  new RunningAverage(this.frequency / 400, linelight_left.readValue());
 
     private CrossSectionDetector cross_detector = CrossSectionDetector.getInstance();
+    private DriveForward forward_driver = null;
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
     //DifferentialPilot pilot = new DifferentialPilot(6., 16.2 + 1, MotorL, MotorR);
@@ -25,6 +26,7 @@ public class Turn  extends Thread implements Behavior {
     public int turn_count;
     private static Turn instance = null;
     private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
+    private Boolean push_box = false;
 
     public boolean takeControl()
     {
@@ -38,7 +40,12 @@ public class Turn  extends Thread implements Behavior {
 
     public static Turn getInstance()
     {
-        if(instance == null) instance = new Turn();
+        if(instance == null)
+        {
+            instance = new Turn();
+            //TODO: Fix retarded curcular dependencies.
+            instance.forward_driver = DriveForward.getInstance();
+        }
         return instance;
     }
 
@@ -46,10 +53,11 @@ public class Turn  extends Thread implements Behavior {
         suppressed = true;
     }
 
-    public void doTurn(Direction _direction, int _turn_count)
+    public void doTurn(Direction _direction, int _turn_count, Boolean _push_box)
     {
         this.direction = _direction;
         this.turn_count = _turn_count;
+        this.push_box = _push_box;
     }
 
     public void action() {
@@ -81,7 +89,11 @@ public class Turn  extends Thread implements Behavior {
 
         //Wait a moment to make sure that we have turned of from the crossSection
         wait_for_new_crossection();
-
+        if(this.push_box == true)
+        {
+            forward_driver.set_goal_degrees(400); //TODO: ADJUST MORE PRECISLY
+            this.push_box =  false;
+        }
     }
 
     public void wait_for_new_crossection()

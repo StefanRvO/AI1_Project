@@ -10,9 +10,6 @@ import java.lang.Object;
 
 public class CrossSectionDetector  extends Thread implements Behavior {
 
-    NXTRegulatedMotor MotorL = Motor.A;
-    NXTRegulatedMotor MotorR = Motor.C;
-
     //Thread CD_tread = new Thread(new CrossDetectorThread()).start();
     private boolean suppressed = false;
     LightSensor cross_light = new LightSensor(SensorPort.S1);
