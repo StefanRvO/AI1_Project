@@ -44,4 +44,5 @@ enum Move_Type
 {
     Normal,
     Macro,
+    Invalid,
 };

@@ -348,23 +348,23 @@ bool Sokoban_Box::is_in_deadlock_zone() const
 
 }
 
-bool Sokoban_Box::is_tunnel() const
+bool Sokoban_Box::is_tunnel(bool deadzone) const
 {
-    return this->is_tunnel(Orientation::Horizontal) || this->is_tunnel(Orientation::Vertical);
+    return this->is_tunnel(Orientation::Horizontal, deadzone) || this->is_tunnel(Orientation::Vertical, deadzone);
 }
 
-bool Sokoban_Box::is_tunnel(Orientation orientation) const
+bool Sokoban_Box::is_tunnel(Orientation orientation, bool deadzone) const
 {
     if(orientation == Orientation::Horizontal)
     {
-        return (this->nb_up->is_solid() || this->nb_up->is_in_deadlock_zone()) &&
-         (this->nb_down->is_solid() || this->nb_down->is_in_deadlock_zone());
+        return (this->nb_up->is_solid() || (this->nb_up->is_in_deadlock_zone() && deadzone)) &&
+         (this->nb_down->is_solid() || (this->nb_down->is_in_deadlock_zone() && deadzone));
     }
 
     if(orientation == Orientation::Vertical)
     {
-        return (this->nb_left->is_solid() || this->nb_left->is_in_deadlock_zone()) &&
-         (this->nb_right->is_solid() || this->nb_right->is_in_deadlock_zone());
+        return (this->nb_left->is_solid() || (this->nb_left->is_in_deadlock_zone() && deadzone)) &&
+         (this->nb_right->is_solid() || (this->nb_right->is_in_deadlock_zone() && deadzone));
     }
     return false;
 }

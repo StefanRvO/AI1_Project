@@ -84,7 +84,8 @@ class Sokoban_Board
         static void  find_possible_moves_rec(Move_Direction dir, Sokoban_Box *search_box,
             std::vector<Sokoban_Box *> &searched_fields, std::vector<move> &moves);
 
-        void perform_move(move the_move, bool reverse = false, bool recalculate = true);
+        void perform_move(const move &the_move, bool reverse = false, bool recalculate = true,
+            bool ignore_macro = false);
         float get_heuristic();
         friend std::ostream& operator<<(std::ostream& os, const Sokoban_Board &_board)
         {
@@ -97,7 +98,7 @@ class Sokoban_Board
         static std::vector <Sokoban_Box> parse_row(const std::string &row_str, uint32_t y_pos);
         bool is_reachable(Sokoban_Box *box) const;
         void calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *current, float edge_cost, Move_Direction move_dir);
-        float get_move_cost(move the_move); //Returns the move cost based on the reachable map.
+        float get_move_cost(const move &the_move); //Returns the move cost based on the reachable map.
         float get_turn_direction_cost(Move_Direction last_dir, Move_Direction this_dir);
         void calc_reachable_rec(Sokoban_Box *box);
         std::vector<move> get_player_moves(const std::vector<move> &box_moves);

@@ -58,8 +58,11 @@ bool Solver::solve()
     for(auto &the_move : moves)
     {
         std::cout << the_move << "\t" << " Move cost: " <<
-            this->board->get_move_cost(the_move) << "\t" << this->board->get_heuristic() << "\t"
-            << this->ttable.get_entry(*this->board)->get_cost_estimate() << std::endl;
+            this->board->get_move_cost(the_move) << "\t" << this->board->get_heuristic() << "\t";
+            if(this->ttable.get_entry(*this->board))
+                std::cout << this->ttable.get_entry(*this->board)->get_cost_estimate() << std::endl;
+            else
+                std::cout << std::endl;
         this->board->perform_move(the_move, false, true);
         //std::cout << *this->board << std::endl;
         //state_entry* this_entry = ttable.get_entry(*this->board);
@@ -286,7 +289,15 @@ std::vector<move> Solver::get_path_to_state(state_entry *state)
     std::vector<move> moves;
     while(state->total_moves != 0)
     {
-        moves.push_back(state->last_move);
+        auto the_move = state->last_move;
+        if(the_move.type == Macro)
+        {
+            for(auto macro_move : boost::adaptors::reverse(*the_move.macro_move))
+                moves.push_back(macro_move);
+        }
+        the_move.type = Normal;
+        the_move.macro_move = nullptr;
+        moves.push_back(the_move);
         state = state->parent_entry;
     }
     reverse(moves.begin(), moves.end());

@@ -49,7 +49,28 @@ void TunnelMacroCreator::compute_macros_internal()
         compute_tunnel_members(box);
         if(box->tunnel_type == Two_Way && box->tunnel_members.size() == 0)
             box->tunnel_type = None;
+        if(box->tunnel_type == Two_Way)
+            create_two_way_macro(box);
+        else if(box->tunnel_type == One_Way)
+            create_one_way_macro(box);
+
+        //Print the created macro move
+        std::cout << *box << " ";
+        for(auto &the_move : box->macro_move[0])
+            std::cout << the_move << " ";
+        std::cout << "| ";
+        for(auto &the_move : box->macro_move[1])
+            std::cout << the_move << " ";
+        std::cout << "| ";
+        for(auto &the_move : box->macro_move[2])
+            std::cout << the_move << " ";
+        std::cout << "| ";
+        for(auto &the_move : box->macro_move[3])
+            std::cout << the_move << " ";
+
+        std::cout << std::endl;
     }
+
     //Create the actual macros and save them on the box.
     //Compute the cost of the macro move.
     //Implement this in move data structure, just a linked list of moves, should be rather easy
@@ -176,4 +197,41 @@ void TunnelMacroCreator::compute_tunnel_members(Sokoban_Box *entrance)
         nb = nb->get_neighbour(tunnel_dir);
     }
     return;
+}
+
+void TunnelMacroCreator::create_two_way_macro(Sokoban_Box *entrance)
+{
+    entrance->is_solid();
+}
+void TunnelMacroCreator::create_one_way_macro(Sokoban_Box *entrance)
+{
+    //Check if this is a single block tunnel
+    if(entrance->tunnel_members.size() == 0)
+    {
+        for(int dir = 0; dir <= (int)Move_Direction::right; dir++)
+        {
+            entrance->macro_move[dir].push_back(move((Move_Direction)dir, entrance));
+        }
+        return;
+    }
+    //Find direction the tunnel is in.
+    Move_Direction tunnel_dir = none;
+    if(entrance->tunnel_members.front() == entrance->nb_up) tunnel_dir = up;
+    else if(entrance->tunnel_members.front() == entrance->nb_down) tunnel_dir = down;
+    else if(entrance->tunnel_members.front() == entrance->nb_left) tunnel_dir = left;
+    else if(entrance->tunnel_members.front() == entrance->nb_right) tunnel_dir = right;
+
+    //Add the entrance itself to the macro.
+    entrance->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir, entrance));
+    //Add the members to the macro
+    for(auto &member : entrance->tunnel_members)
+    {
+        entrance->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir, member));
+    }
+    //Add the box after last member to the macro, but only if the last member is a "true" tunnel square
+    if(entrance->tunnel_members.back()->is_tunnel(false) == true)
+    {
+        entrance->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir,
+            entrance->tunnel_members.back()->get_neighbour(tunnel_dir)));
+    }
 }

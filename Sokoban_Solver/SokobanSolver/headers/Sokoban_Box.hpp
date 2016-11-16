@@ -5,6 +5,7 @@
 #include <ostream>
 #include "Sokoban_Move.hpp"
 #include "enums.hpp"
+#include <list>
 //A box defining a field on the Sokoban board
 
 
@@ -54,6 +55,11 @@ class Sokoban_Box
         Tunnel_Type tunnel_type = None;
         Orientation tunnel_orientation = Horizontal;
         std::vector<Sokoban_Box *> tunnel_members;
+         //List of macro moves. Indexed by the direction the box comes from
+         //There can only be max two macro moves per field, but this is easier,
+         //and don't cause much overhead anyway.
+        std::list<Sokoban_Move> macro_move[4];
+
         //Set the neighbours. Should be called after a move as this, for performance
         //Reasons, is not done automatically
         void set_neighbours(Sokoban_Box *_nb_up, Sokoban_Box *_nb_down,
@@ -97,8 +103,8 @@ class Sokoban_Box
         Sokoban_Box() {};
         bool is_solid() const;
         bool is_in_deadlock_zone() const;
-        bool is_tunnel() const;
-        bool is_tunnel(Orientation orientation) const;
+        bool is_tunnel(bool deadzone = true) const;
+        bool is_tunnel(Orientation orientation, bool deadzone = true) const;
         bool operator() (Sokoban_Box *first, Sokoban_Box *second)
         {
             if(first->cost_to_box == second->cost_to_box)

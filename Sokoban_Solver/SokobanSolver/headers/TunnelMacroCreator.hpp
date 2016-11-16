@@ -20,6 +20,9 @@ class TunnelMacroCreator
     std::vector<Sokoban_Box *> find_entrances();
     Tunnel_Type set_tunnel_type(Sokoban_Box *box);
     void compute_tunnel_members(Sokoban_Box *entrance);
+    void create_two_way_macro(Sokoban_Box *entrance);
+    void create_one_way_macro(Sokoban_Box *entrance);
+
     public:
     TunnelMacroCreator(Sokoban_Board *_the_board);
     ~TunnelMacroCreator() {}

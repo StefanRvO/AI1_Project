@@ -319,7 +319,8 @@ std::vector<move> Sokoban_Board::find_possible_moves()
             if(box.is_moveable(dir) && this->is_reachable(box.get_neighbour(reverse_dir)))
             {
                 auto the_move = move(dir, &box);
-                moves.push_back(the_move);
+                if(the_move.type != Invalid)
+                    moves.push_back(the_move);
             }
         }
     }
@@ -327,29 +328,58 @@ std::vector<move> Sokoban_Board::find_possible_moves()
 }
 
 
-void Sokoban_Board::perform_move(move the_move, bool reverse, bool recalculate)
+void Sokoban_Board::perform_move(const move &the_move, bool reverse, bool recalculate,
+    bool ignore_macro)
 {
+    if(the_move.type == Macro && !ignore_macro)
+    {
+        //std::cout << "macro " << the_move << " " << reverse << " " << ignore_macro << std::endl;
+
+        if(reverse)
+        {
+            for(Sokoban_Move &macro_move : boost::adaptors::reverse(*the_move.macro_move))
+            {
+                this->perform_move(macro_move, true, false);
+            }
+            this->perform_move(the_move, true, recalculate, true);
+            return;
+        }
+        else
+        {
+            this->perform_move(the_move, false, false, true);
+            for(Sokoban_Move &macro_move : *the_move.macro_move)
+            {
+                this->perform_move(macro_move, false, false);
+            }
+            if(recalculate)
+            {
+                this->calc_reachable(the_move.macro_move->back().first);
+            }
+            return;
+        }
+    }
+    //std::cout << "non_macro " << the_move << " " << reverse << " " << ignore_macro << std::endl;
     /*static uint64_t lol = 0;
     lol++;
     if(lol % 10000 == 0) std::cout << lol << std::endl;*/
     Sokoban_Box *start_pos  = nullptr;
     Sokoban_Box *end_pos    = nullptr;
-
+    Sokoban_Box *box = the_move.second;
     if(reverse == false)
     {
-        start_pos = the_move.second;
-        Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
-        end_pos = the_move.second;
+        start_pos = box;
+        Sokoban_Box::move(box, this->player_box, the_move.first, reverse);
+        end_pos = box;
     }
     else
     {
         //Perform move
-        start_pos = the_move.second->get_neighbour(the_move.first);
-        end_pos = the_move.second;
+        start_pos = box->get_neighbour(the_move.first);
+        end_pos = box;
         /*std::cout << *start_pos << std::endl;
         std::cout << *end_pos << std::endl;*/
 
-        Sokoban_Box::move(the_move.second, this->player_box, the_move.first, reverse);
+        Sokoban_Box::move(box, this->player_box, the_move.first, reverse);
     }
     #ifndef NDEBUG
     auto start_size = this->board_boxes.size();
@@ -536,16 +566,22 @@ float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direc
 }
 
 
-float Sokoban_Board::get_move_cost(move the_move)
+float Sokoban_Board::get_move_cost(const move &the_move)
 {
-    Sokoban_Box* &box = the_move.second;
-    Move_Direction &dir = the_move.first;
+    const Sokoban_Box* box = the_move.second;
+    const Move_Direction &dir = the_move.first;
     //Get the square which the player is on when starting to push the box.
-    Sokoban_Box *player_start_push_box = box->get_neighbour(get_reverse_direction(dir));
+    const Sokoban_Box *player_start_push_box = box->get_neighbour(get_reverse_direction(dir));
     float start_push_cost = player_start_push_box->cost_to_box;
     //Get the cost of pushing the box(simply turn direction cost)
     float push_turn_cost = get_turn_direction_cost(player_start_push_box->move_dir, dir) + MOVE_COST;
-    return push_turn_cost + start_push_cost;
+    float total_cost = push_turn_cost + start_push_cost;
+    if(the_move.type == Macro)
+    {
+        for(uint8_t i = 0; i < the_move.macro_move->size(); i++)
+            total_cost += FORWARD_COST + MOVE_COST + PUSH_COST;
+    }
+    return total_cost;
 }
 
 
@@ -592,8 +628,6 @@ std::string Sokoban_Board::get_move_string(const std::vector<move> &moves)
 {   //Return a string representing the given moves in the standard format:
     //"u, d, l, r for player moves, U, D, L, R for box pushes"
     //The given moves must be legal from this board state
-    //The board state will be altered so it will be in the state after the first move.
-    //Will recover the board.
     std::string move_str = "";
     //std::vector<move> box_pushes;
     for(auto the_move: moves)
