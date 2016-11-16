@@ -44,6 +44,17 @@ void TunnelMacroCreator::compute_macros_internal()
 {
     mark_candidates();
     std::vector<Sokoban_Box *> entrances = find_entrances();
+    for(auto &box : entrances)
+    {
+        compute_tunnel_members(box);
+        if(box->tunnel_type == Two_Way && box->tunnel_members.size() == 0)
+            box->tunnel_type = None;
+    }
+    //Create the actual macros and save them on the box.
+    //Compute the cost of the macro move.
+    //Implement this in move data structure, just a linked list of moves, should be rather easy
+    //Implement this in perform move, see above.
+
 }
 
 void TunnelMacroCreator::mark_candidates()
@@ -107,6 +118,62 @@ Tunnel_Type TunnelMacroCreator::set_tunnel_type(Sokoban_Box *box)
 std::vector<Sokoban_Box *> TunnelMacroCreator::find_entrances()
 {
     std::vector<Sokoban_Box *> entrances;
-
+    for(uint32_t x = 1; x < this->the_board->size_x; x++)
+    {
+        for(uint32_t y = 1; y < this->the_board->size_y; y++)
+        {
+            auto &box = this->the_board->board[x][y];
+            if(box.tunnel_type == None) continue;
+            if(box.tunnel_orientation == Horizontal)
+            {
+                if(box.nb_left->tunnel_type != box.tunnel_type ||
+                   box.nb_right->tunnel_type != box.tunnel_type)
+                   entrances.push_back(&box);
+            }
+            else
+            {
+                if(box.nb_up->tunnel_type != box.tunnel_type ||
+                   box.nb_down->tunnel_type != box.tunnel_type)
+                   entrances.push_back(&box);
+            }
+        }
+    }
     return entrances;
+}
+
+void TunnelMacroCreator::compute_tunnel_members(Sokoban_Box *entrance)
+{
+    Sokoban_Box *nb;
+    Move_Direction tunnel_dir = Move_Direction::none;
+    if(entrance->tunnel_orientation == Horizontal)
+    {
+        if(entrance->nb_left->tunnel_type == entrance->tunnel_type)
+            tunnel_dir = left;
+        else if(entrance->nb_right->tunnel_type == entrance->tunnel_type)
+            tunnel_dir = right;
+        else
+        {
+            return; //Single box tunnel
+        }
+    }
+    else
+    {
+        if(entrance->nb_up->tunnel_type == entrance->tunnel_type)
+            tunnel_dir = up;
+        else if(entrance->nb_down->tunnel_type == entrance->tunnel_type)
+            tunnel_dir = down;
+        else
+            return; //Single box tunnel
+    }
+
+    nb = entrance->get_neighbour(tunnel_dir);
+    //If this is a two way tunnel, offset the entrance one, as it could be used for parking
+    if(entrance->nb_down->tunnel_type == Two_Way)
+        entrance = nb;
+    while(nb->tunnel_type == entrance->tunnel_type)
+    {
+        entrance->tunnel_members.push_back(nb);
+        nb = nb->get_neighbour(tunnel_dir);
+    }
+    return;
 }

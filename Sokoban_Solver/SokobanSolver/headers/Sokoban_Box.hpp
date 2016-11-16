@@ -53,6 +53,7 @@ class Sokoban_Box
 
         Tunnel_Type tunnel_type = None;
         Orientation tunnel_orientation = Horizontal;
+        std::vector<Sokoban_Box *> tunnel_members;
         //Set the neighbours. Should be called after a move as this, for performance
         //Reasons, is not done automatically
         void set_neighbours(Sokoban_Box *_nb_up, Sokoban_Box *_nb_down,
