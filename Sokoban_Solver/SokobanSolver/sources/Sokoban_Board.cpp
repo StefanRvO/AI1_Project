@@ -58,7 +58,7 @@ bool Sokoban_Board::is_freeze_deadlocked()
 char Sokoban_Board::get_box_char(const Sokoban_Box &box)
 {
     const Box_Type &type = box.type;
-    switch(box.tunnel_type)
+    /*switch(box.tunnel_type)
     {
         case None:
             break;
@@ -66,7 +66,7 @@ char Sokoban_Board::get_box_char(const Sokoban_Box &box)
             return '-';
         case Two_Way:
             return '=';
-    }
+    }*/
 
     switch(type)
     {
@@ -74,10 +74,10 @@ char Sokoban_Board::get_box_char(const Sokoban_Box &box)
         case Goal_Box:        return '*';
         case Goal:            return '.';
         case Box:             return '$';
-        case DeadLock_Zone_Player: return '%';
+        case DeadLock_Zone_Player: //return '%';
         case Player:          return '@';
         case Player_On_Goal:  return '+';
-        case DeadLock_Zone_Free:   return '&';
+        case DeadLock_Zone_Free:   //return '&';
         case Free:            return ' ';
         default:
         throw std::runtime_error(std::string("Trying to convert invalid type to char.\nThis should not happen! Type was" + std::to_string((int)type)));
@@ -185,12 +185,12 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
             default: break;
         }
     }
-//    std::cout << get_board_str(true) << std::endl;
     cost_matrix = dlib::matrix<int32_t>(this->board_boxes.size(), this->board_boxes.size());
     this->make_wavefront_maps();
     TunnelMacroCreator macroCreator(this);
     macroCreator.compute_macros();
-    std::cout << *this << std::endl;
+    //std::cout << get_board_str(true) << std::endl;
+
 }
 
 void Sokoban_Board::make_wavefront_maps()
@@ -230,8 +230,6 @@ void Sokoban_Board::make_wavefront_maps()
         {
             if(this->board[x][y].is_solid()) continue;
             this->calculate_cost_map(this->board[x][y]);
-            //std::cout << this->board[x][y] << std::endl;
-            //std::cout << this->get_cost_map(&this->board[x][y]) << std::endl << std::endl;
 
         }
 

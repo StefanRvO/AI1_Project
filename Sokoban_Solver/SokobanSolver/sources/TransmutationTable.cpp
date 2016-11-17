@@ -26,7 +26,6 @@ void TransmutationTable::clear()
 
 bool TransmutationTable::check_table(const Sokoban_Board &board, float cost_to_state, float *heuristic,
     move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node)
-
 {
     //static uint32_t table_checks = 0;
     //if(table_checks++ % 10000 == 0)std::cout << table_checks  <<std::endl;

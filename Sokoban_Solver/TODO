@@ -1,3 +1,1 @@
-Wavefront map:
-Improve by marking unreachable fialds with inifinity cost, static deadlock detection may be reused in some way.
-Should give decent speedups.
+Implement move ordering.

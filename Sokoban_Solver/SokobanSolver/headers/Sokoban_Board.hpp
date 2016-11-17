@@ -115,5 +115,8 @@ class Sokoban_Board
         bool is_freeze_deadlocked();
         std::string get_cost_map(Sokoban_Box *box);
         static std::string get_cost_string(float cost);
-
+        uint32_t get_box_count()
+        {
+            return this->board_boxes.size();
+        }
 };

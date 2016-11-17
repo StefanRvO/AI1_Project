@@ -8,7 +8,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <list>
 #include <limits>
-#define MAX_BOXES 10
+#define MAX_BOXES 20
 #define BITS_PER_COORD 6
 
 #define BITS_TO_KEY ((MAX_BOXES + 1) * BITS_PER_COORD * 2)
@@ -95,7 +95,6 @@ struct state_entry
 struct bucket
 {
     std::list<state_entry> entries;
-
     float insert_entry(key_type _full_key, float _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
     {
         //static uint32_t insertions = 0;
@@ -165,5 +164,11 @@ class TransmutationTable
         uint32_t total_size = 0;
         for(uint32_t i = 0; i < this->table_size; i++) total_size += table[i].get_size();
         return total_size;
+    }
+    uint32_t get_max_size()
+    {
+        uint32_t max = 0;
+        for(uint32_t i = 0; i < this->table_size; i++) max = std::max(max, table[i].get_size());
+        return max;
     }
 };

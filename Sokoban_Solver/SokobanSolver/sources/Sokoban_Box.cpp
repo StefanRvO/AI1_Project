@@ -411,7 +411,8 @@ void Sokoban_Box::insert_player()
             this->type = DeadLock_Zone_Player;
         break;
         default:
-        assert(false);
+            std::cout << std::to_string(this->type) << std::endl;
+            assert(false);
     }
 }
 
@@ -429,6 +430,7 @@ void Sokoban_Box::remove_player()
             this->type = DeadLock_Zone_Free;
         break;
         default:
+        std::cout << std::to_string(this->type) << std::endl;
         assert(false);
     }
 }

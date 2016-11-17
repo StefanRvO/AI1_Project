@@ -4,82 +4,55 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <algorithm>
 
-
-
-
-Solver::Solver(Sokoban_Board *_board)
-: ttable(1000003)
+Solver::Solver(Sokoban_Board *_board, bool _silent)
+: silent(_silent), ttable(1000003)
 {
     this->board = _board;
 }
 
-bool Solver::solve()
+uint32_t Solver::get_box_move_count()
 {
-    //std::cout << this->board->get_board_str(true) << std::endl;
-    /*std::cout << *this->board->player_box << std::endl;
-    std::cout << "player box " << *this->board->player_box << std::endl;*/
-
-    /*move test_move = {Move_Direction::left, &this->board->board[8][4]};
-
-    //this->board->perform_move(test_move, false, false);
-    std::cout << *this->board->player_box << std::endl;
-    std::cout << *this->board << std::endl;
-    */
-    this->board->calc_reachable(Move_Direction::none);
-    //std::cout << this->board->get_reachable_map() << std::endl;
-    __attribute__((unused))state_entry *goal_entry = A_star_solve();
-    std::cout << "Solved, visited " << this->visited_nodes << " nodes." << std::endl;
-    std::cout << *this->board << std::endl;
-    auto moves = this->get_path_to_state(goal_entry);
-    std::cout << moves.size() << std::endl;
-
-    //std::cout << "Player_moves!" << std::endl;
+    if(this->goal == nullptr) return -1;
+    auto moves = this->get_path_to_state(this->goal);
+    return moves.size();
+}
+std::string Solver::get_player_moves()
+{
+    if(this->goal == nullptr) return "!";
+    auto moves = this->get_path_to_state(this->goal);
     this->go_too_root_state();
     this->board->calc_reachable(Move_Direction::none);
     auto player_moves = this->board->get_player_moves(moves);
-    //std::cout << moves[0] << std::endl;
-    //for(auto &the_move : player_moves)
-    //{
-    //    std::cout << the_move << std::endl;
-    //}
     this->go_too_root_state();
     this->board->calc_reachable(Move_Direction::none);
+    return this->board->get_move_string(player_moves);
+}
+float Solver::get_solution_cost()
+{
+    if(this->goal == nullptr) return -1;
+    return goal->cost_to_state;
+}
 
-    //std::cout << *this->board << std::endl;
-    std::cout << this->board->get_move_string(player_moves) << std::endl;
+milliseconds Solver::get_solve_time()
+{
+    if(this->goal == nullptr) return milliseconds::max();
+    return end_time - start_time;
+}
 
-    this->go_too_root_state();
-    //std::cout << *this->board << std::endl;
+bool Solver::solve(milliseconds max_solve_time)
+{
+    this->start_time = duration_cast< milliseconds >
+        (system_clock::now().time_since_epoch());
+    if(max_solve_time == milliseconds::max())
+        deadline = milliseconds::max();
+    else
+        deadline = this->start_time + max_solve_time;
     this->board->calc_reachable(Move_Direction::none);
-    //std::cout << *this->board << std::endl;
-    //std::cout << this->board->get_reachable_map() << std::endl;
+    goal = A_star_solve();
+    this->end_time = duration_cast< milliseconds >
+    (system_clock::now().time_since_epoch());
 
-    for(auto &the_move : moves)
-    {
-        std::cout << the_move << "\t" << " Move cost: " <<
-            this->board->get_move_cost(the_move) << "\t" << this->board->get_heuristic() << "\t";
-            if(this->ttable.get_entry(*this->board))
-                std::cout << this->ttable.get_entry(*this->board)->get_cost_estimate() << std::endl;
-            else
-                std::cout << std::endl;
-        this->board->perform_move(the_move, false, true);
-        /*std::cout << *this->board << std::endl;
-        this->board->perform_move(the_move, true, false);
-        std::cout << *this->board << std::endl;
-        this->board->perform_move(the_move, false, true);
-        std::cout << *this->board << std::endl;*/
-
-        //std::cout << *this->board << std::endl;
-        //state_entry* this_entry = ttable.get_entry(*this->board);
-        //std::cout << this_entry->heuristic << "\t" << this_entry->cost_to_state << "\t" << this_entry->full_key <<   std::endl;
-    }
-    std::cout << std::endl << player_moves.size()  << " cost: " << goal_entry->cost_to_state <<
-        "\t" << goal_entry->get_cost_estimate() << "\t" << goal_entry->heuristic <<
-        "\t" << this->board->get_heuristic() << std::endl;
-
-    //{
-    //
-    //}*/
+    if(goal == nullptr) return false;
     return true;
 }
 
@@ -93,9 +66,14 @@ uint32_t Solver::ttable_size()
     return this->ttable.get_size();
 }
 
+uint32_t Solver::max_ttable_size()
+{
+    return this->ttable.get_max_size();
+}
+
+
 state_entry *Solver::A_star_solve()
 {
-    uint32_t frozen = 0;
     std::cout << std::fixed << std::setprecision(1);
     //Solve the sokoban puzzle using an A* algorithm
     std::list<float> move_costs;
@@ -109,6 +87,10 @@ state_entry *Solver::A_star_solve()
     float last_cost = 0;
     while(open_list.size())
     {
+        if(this->deadline < duration_cast< milliseconds >
+            (system_clock::now().time_since_epoch()))
+            return nullptr;
+
         current = *open_list.begin();
         open_list.erase(open_list.begin());
         go_to_state(last_entry, current);
@@ -117,12 +99,14 @@ state_entry *Solver::A_star_solve()
         if(current_cost != last_cost)
         {
             last_cost = current_cost;
-            std::cout << "Searching for solution with cost " << last_cost << "\r" << std::flush;
+            if(!this->silent)
+                std::cout << "Searching for solution with cost " << last_cost << "\r" << std::flush;
         }
         this->board->calc_reachable(current->last_move.first);
         if(this->board->is_solved())
         {
-            std::cout << std::endl;
+            if(!this->silent)
+                std::cout << std::endl << std::endl;
             return current;
         }
         current->state = CLOSED;

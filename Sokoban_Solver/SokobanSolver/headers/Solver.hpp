@@ -2,6 +2,9 @@
 #include "Sokoban_Board.hpp"
 #include "TransmutationTable.hpp"
 #include <queue>
+#include <chrono>
+
+using namespace std::chrono;
 
 //Class for solving Sokoban Puzzles
 bool state_entry_cmp(state_entry* &first, state_entry* &second);
@@ -10,11 +13,22 @@ bool state_entry_cmp(state_entry* &first, state_entry* &second);
 class Solver
 {
     public:
-        Solver(Sokoban_Board *_board);
-        bool solve();
+        Solver(Sokoban_Board *_board, bool _silent = false);
+        bool solve(milliseconds max_solve_time = milliseconds::max());
+
         uint32_t get_visited_nodes();
         uint32_t ttable_size();
+        uint32_t max_ttable_size();
+        uint32_t get_box_move_count();
+        std::string get_player_moves();
+        float get_solution_cost();
+        milliseconds get_solve_time();
     private:
+        milliseconds start_time;
+        milliseconds end_time;
+        milliseconds deadline;
+        bool silent = false;
+        state_entry *goal = nullptr;
         uint32_t visited_nodes = 0;
         //std::priority_queue<state_entry *, std::vector<state_entry *>, state_entry> open_list;
         std::set<state_entry *, state_entry> open_list;

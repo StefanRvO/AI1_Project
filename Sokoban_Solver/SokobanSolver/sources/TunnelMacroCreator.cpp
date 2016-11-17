@@ -9,34 +9,18 @@ TunnelMacroCreator::TunnelMacroCreator(Sokoban_Board *_the_board)
 void TunnelMacroCreator::compute_macros()
 {
     //Temporarily remove player and boxes
-    std::vector<Box_Type> types;
     for(auto &box : this->the_board->board_boxes)
-    {
-        types.push_back(box.first->type);
-        box.first->type = Box_Type::Free;
-    }
-    types.push_back(this->the_board->player_box->type);
-    switch(this->the_board->player_box->type)
-    {
-        case Player_On_Goal:
-        case Player:
-            this->the_board->player_box->type = Box_Type::Free;
-            break;
-        case DeadLock_Zone_Player:
-            this->the_board->player_box->type = Box_Type::DeadLock_Zone_Free;
-            break;
-        default:
-            assert(false);
-    }
+        box.first->remove_box();
+    this->the_board->player_box->remove_player();
+
     //Actually compute the macros.
     this->compute_macros_internal();
     //Restore boxes and player
-    this->the_board->player_box->type = types.back();
-    types.pop_back();
-    uint32_t i = 0;
+
+    this->the_board->player_box->insert_player();
     for(auto &box : this->the_board->board_boxes)
     {
-        box.first->type = types[i++];
+        box.first->insert_box();
     }
 }
 
@@ -60,7 +44,7 @@ void TunnelMacroCreator::compute_macros_internal()
             create_one_way_macro(box);
 
         //Print the created macro move
-        std::cout << *box << " ";
+        /*std::cout << *box << " ";
         for(auto &the_move : box->macro_move[0])
             std::cout << the_move << " ";
         std::cout << "| ";
@@ -73,7 +57,7 @@ void TunnelMacroCreator::compute_macros_internal()
         for(auto &the_move : box->macro_move[3])
             std::cout << the_move << " ";
 
-        std::cout << std::endl;
+        std::cout << std::endl;*/
     }
 
 }
@@ -252,8 +236,10 @@ void TunnelMacroCreator::create_one_way_macro(Sokoban_Box *entrance)
     {
         entrance->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir, member));
     }
-    //Add the box after last member to the macro, but only if the last member is a "true" tunnel square
-    if(entrance->tunnel_members.back()->is_tunnel(false) == true)
+    //Add the box after last member to the macro, but only if the last member is a "true" tunnel square, and the next
+    //field is not a goal
+    if(entrance->tunnel_members.back()->is_tunnel(false) == true &&
+    entrance->tunnel_members.back()->get_neighbour(tunnel_dir)->type != Goal)
     {
         entrance->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir,
             entrance->tunnel_members.back()->get_neighbour(tunnel_dir)));
