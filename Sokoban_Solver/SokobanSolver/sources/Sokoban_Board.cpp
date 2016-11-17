@@ -14,6 +14,8 @@
 #include "TunnelMacroCreator.hpp"
 
 
+#define INFINITY_F (100000000.)
+
 uint8_t get_digits(uint32_t x)
 {
     uint8_t len = 1;
@@ -184,7 +186,7 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
         }
     }
 //    std::cout << get_board_str(true) << std::endl;
-    cost_matrix = dlib::matrix<int>(this->board_boxes.size(), this->board_boxes.size());
+    cost_matrix = dlib::matrix<int32_t>(this->board_boxes.size(), this->board_boxes.size());
     this->make_wavefront_maps();
     TunnelMacroCreator macroCreator(this);
     macroCreator.compute_macros();
@@ -228,6 +230,9 @@ void Sokoban_Board::make_wavefront_maps()
         {
             if(this->board[x][y].is_solid()) continue;
             this->calculate_cost_map(this->board[x][y]);
+            //std::cout << this->board[x][y] << std::endl;
+            //std::cout << this->get_cost_map(&this->board[x][y]) << std::endl << std::endl;
+
         }
 
     }
@@ -407,7 +412,7 @@ void Sokoban_Board::perform_move(const move &the_move, bool reverse, bool recalc
 
 float Sokoban_Board::get_heuristic()
 {
-    if(this->is_freeze_deadlocked()) return std::numeric_limits<float>::max();
+    if(this->is_freeze_deadlocked()) return INFINITY_F;
 
     float h = this->compute_minimum_cost_matching() * (PUSH_COST + MOVE_COST +
         std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
@@ -453,7 +458,7 @@ float Sokoban_Board::compute_minimum_cost_matching()
 }
 bool Sokoban_Board::is_reachable(Sokoban_Box *box) const
 {
-    if(box->cost_to_box != std::numeric_limits<float>::max() && !box->is_solid())
+    if(box->cost_to_box != INFINITY_F && !box->is_solid())
         return true;
     return false;
 }
@@ -467,7 +472,7 @@ void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
     for(uint32_t x = 0; x < this->size_x; x++)
         for(uint32_t y = 0; y < this->size_y; y++)
         {
-            this->board[x][y].cost_to_box = std::numeric_limits<float>::max();
+            this->board[x][y].cost_to_box = INFINITY_F;
             this->board[x][y].closed = false;
             this->board[x][y].parent_node = nullptr;
         }
@@ -491,7 +496,7 @@ void Sokoban_Board::calc_reachable(Move_Direction last_move_dir)
         //Get top entry.
         auto top_itt = reachable_open_list.begin();
         Sokoban_Box *top = *top_itt;
-        if(top->cost_to_box == std::numeric_limits<float>::max())
+        if(top->cost_to_box == INFINITY_F)
             break;
         reachable_open_list.erase(top_itt);
         top->closed = true;
@@ -577,7 +582,7 @@ float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direc
         break;
         case none: return FORWARD_COST;
     }
-    return std::numeric_limits<float>::max();
+    return INFINITY_F;
 }
 
 
@@ -680,14 +685,37 @@ std::string Sokoban_Board::get_reachable_map()
     return board_str;
 }
 
+std::string Sokoban_Board::get_cost_map(Sokoban_Box *box)
+{ //return a string representing the "reachable" map
+    std::string board_str = "";
+    for(uint32_t y = 0; y < this->size_y; y++)
+    {
+
+        std::string row_str = std::to_string(y);
+        row_str += " ";
+        for(uint32_t x = 0; x < this->size_x; x++)
+        {
+            row_str += Sokoban_Board::get_cost_string(box->get_cost_to_box(this->board[x][y])) + " ";
+        }
+        board_str += row_str;
+        board_str += "\n";
+    }
+    return board_str;
+}
+
+
 std::string Sokoban_Board::get_reachable_str(Sokoban_Box &box)
 {
     Move_Direction dir = Move_Direction::none;
     auto sim_move = move(dir, &box);
     float cost = get_move_cost(sim_move);
-    if(cost == std::numeric_limits<float>::max()) return std::string("UUUUUU");
+    return Sokoban_Board::get_cost_string(cost);
+}
+std::string Sokoban_Board::get_cost_string(float cost)
+{
+    if(cost == INFINITY_F) return std::string("UUUUUU");
     char formated_string[20];
-    sprintf(formated_string, "%3.2f", cost);
+    sprintf(formated_string, "%6.2f", cost);
     return std::string(formated_string);
 }
 
@@ -702,7 +730,7 @@ void Sokoban_Board::calculate_cost_map(Sokoban_Box &box)
         cost_map->push_back(row_vec);
         for(uint32_t y = 0; y < this->size_y; y++)
         {
-            cost_map->back().push_back(std::numeric_limits<float>::max());
+            cost_map->back().push_back(INFINITY_F);
         }
     }
     (*cost_map)[box.pos.x_pos][box.pos.y_pos] = 0;
@@ -734,7 +762,8 @@ bool Sokoban_Board::calculate_cost_map_helper(const Sokoban_Box *this_box, Move_
     std::vector<std::vector <float > > *cost_map)
 {
     Sokoban_Box *nb = this_box->get_neighbour(dir);
-    if(this_box->is_moveable(dir) &&
+    Sokoban_Box *rev_nb = this_box->get_neighbour(get_reverse_direction(dir));
+    if(this_box->is_moveable(dir) && !rev_nb->is_solid() &&
     (*cost_map)[this_box->pos.x_pos][this_box->pos.y_pos] + 1 <
     (*cost_map)[nb->pos.x_pos][nb->pos.y_pos] )
     {
@@ -751,7 +780,7 @@ void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_m
     this->upper_left_reachable = this->player_box;
     for(uint32_t x = 0; x < this->size_x; x++)
         for(uint32_t y = 0; y < this->size_y; y++)
-            this->board[x][y].cost_to_box = std::numeric_limits<float>::max();
+            this->board[x][y].cost_to_box = INFINITY_F;
 
     this->board[player_box->pos.x_pos][player_box->pos.y_pos].cost_to_box = 1;
     if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up);

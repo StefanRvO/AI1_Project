@@ -1,4 +1,3 @@
-Heuristic improvement:
-For each box, compute a wavefront map, for fast lookup of cost from one position to another position.
-Try to implement minimum cost matching, may be difficult/recquire further changes.
-
+Wavefront map:
+Improve by marking unreachable fialds with inifinity cost, static deadlock detection may be reused in some way.
+Should give decent speedups.

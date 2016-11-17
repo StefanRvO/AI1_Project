@@ -34,7 +34,7 @@ class Sokoban_Board
         Sokoban_Box *player_box = nullptr; //pointer to the box with the player.
         Sokoban_Box *initial_player_box = nullptr;
         std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
-        dlib::matrix<int> cost_matrix;
+        dlib::matrix<int32_t> cost_matrix;
         int64_t frozen = 1;
 
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
@@ -113,4 +113,7 @@ class Sokoban_Board
         float compute_minimum_cost_matching();
         bool is_solved();
         bool is_freeze_deadlocked();
+        std::string get_cost_map(Sokoban_Box *box);
+        static std::string get_cost_string(float cost);
+
 };
