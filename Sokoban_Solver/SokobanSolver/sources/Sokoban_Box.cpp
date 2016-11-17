@@ -220,22 +220,22 @@ Sokoban_Box *Sokoban_Box::get_neighbour(Move_Direction dir) const
     return const_cast<Sokoban_Box *> (this);
 }
 
-bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2)
+bool Sokoban_Box::is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2,  std::vector<Sokoban_Box *> &grp)
 {
     auto nb_1 = this->get_neighbour(dir1);
     auto nb_2 = this->get_neighbour(dir2);
     auto &type1 = nb_1->type;
     auto &type2 = nb_2->type;
 
-    if(type1 == Wall or type2 == Wall) return true;
-    if( (type1 == DeadLock_Zone_Player or type1 == DeadLock_Zone_Free) and
-        (type2 == DeadLock_Zone_Player or type2 == DeadLock_Zone_Free))
+    if(type1 == Wall or nb_1->_deadlocked == 0 or
+       type2 == Wall or nb_2->_deadlocked == 0) return true;
+    if( nb_1->is_in_deadlock_zone() and nb_2->is_in_deadlock_zone())
         return true;
     if(type1 == Goal_Box or type1 == Box)
-        if(nb_1->is_freeze_deadlocked(rand_num, &dir1))
+        if(nb_1->is_freeze_deadlocked(rand_num, &dir1, grp))
             return true;
     if(type2 == Goal_Box or type2 == Box)
-        if(nb_2->is_freeze_deadlocked(rand_num, &dir2))
+        if(nb_2->is_freeze_deadlocked(rand_num, &dir2, grp))
             return true;
     return false;
 }
@@ -254,35 +254,63 @@ uint8_t Sokoban_Box::get_moveable_count() const
     return sum;
 }
 
-bool Sokoban_Box::is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir)
+bool Sokoban_Box::is_freeze_deadlocked(int64_t rand_num)
+{
+    this->freeze_group.clear();
+    this->is_freeze_deadlocked(rand_num, nullptr, this->freeze_group);
+    bool dead = false;
+    bool self_dead = false;
+    for(auto &box : this->freeze_group)
+    {
+        if (box == this) self_dead = true;
+        box->_deadlocked = -1;
+        if(box->type != Goal_Box) dead = true;;
+    }
+    bool freeze = dead and self_dead;
+    return freeze;
+}
+
+bool Sokoban_Box::is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir, std::vector<Sokoban_Box *> &grp)
 {
     //std::cout << "visted: " << *this << std::endl;
-    if(this->_deadlocked == rand_num) return true;
-    if(this->_deadlocked == -rand_num) return false;
+    //if(this->_deadlocked == rand_num)
+    //{
+    //    return true;
+    //}
+    //if(this->_deadlocked == -rand_num) return false;
+    this->_deadlocked = 0;
     if(no_check_dir)
     {
         if(*no_check_dir == left or *no_check_dir == right)
         {
-            if(this->is_freeze_deadlocked_helper(rand_num, up, down))
+            if(this->is_freeze_deadlocked_helper(rand_num, up, down, grp))
+            {
+                grp.push_back(this);
                 return true;
+            }
+            this->_deadlocked = -1;
             return false;
         }
         else
         {
-            if(this->is_freeze_deadlocked_helper(rand_num, left, right))
+            if(this->is_freeze_deadlocked_helper(rand_num, left, right, grp))
+            {
+                grp.push_back(this);
                 return true;
+            }
+            this->_deadlocked = -1;
             return false;
         }
     }
     else
     {
-        if(this->is_freeze_deadlocked_helper(rand_num, up, down) and
-           this->is_freeze_deadlocked_helper(rand_num, left, right))
+        if(this->is_freeze_deadlocked_helper(rand_num, up, down, grp) and
+           this->is_freeze_deadlocked_helper(rand_num, left, right, grp))
         {
-              this->_deadlocked = rand_num;
+              grp.push_back(this);
               return true;
         }
-        this->_deadlocked = -rand_num;
+        this->_deadlocked = -1;
         return false;
     }
 }

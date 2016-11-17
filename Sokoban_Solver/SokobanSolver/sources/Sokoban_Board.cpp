@@ -40,6 +40,19 @@ Box_Type Sokoban_Board::parse_char(char chr)
     }
 }
 
+bool Sokoban_Board::is_freeze_deadlocked()
+{
+    for(auto &box : this->board_boxes)
+    {
+        this->frozen++;
+        if(box.first->is_freeze_deadlocked(frozen))
+        {
+            return true;
+        }
+    }
+    return false;
+
+}
 char Sokoban_Board::get_box_char(const Sokoban_Box &box)
 {
     const Box_Type &type = box.type;
@@ -175,7 +188,7 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
     this->make_wavefront_maps();
     TunnelMacroCreator macroCreator(this);
     macroCreator.compute_macros();
-    //std::cout << get_reachable_map() << std::endl;
+    std::cout << *this << std::endl;
 }
 
 void Sokoban_Board::make_wavefront_maps()
@@ -394,6 +407,8 @@ void Sokoban_Board::perform_move(const move &the_move, bool reverse, bool recalc
 
 float Sokoban_Board::get_heuristic()
 {
+    if(this->is_freeze_deadlocked()) return std::numeric_limits<float>::max();
+
     float h = this->compute_minimum_cost_matching() * (PUSH_COST + MOVE_COST +
         std::min({LEFT_COST, RIGHT_COST, FORWARD_COST, BACKWARD_COST}));
     return h;

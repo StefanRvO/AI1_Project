@@ -35,7 +35,7 @@ class Sokoban_Board
         Sokoban_Box *initial_player_box = nullptr;
         std::set<Sokoban_Box *, Sokoban_Box> reachable_open_list;
         dlib::matrix<int> cost_matrix;
-
+        int64_t frozen = 1;
 
         std::map< Sokoban_Box *, Sokoban_Box *> board_boxes; //pointers to all boxes on the board.
                                         //Made as an hash map for fast access to elements to delete and add.
@@ -112,4 +112,5 @@ class Sokoban_Board
         void make_wavefront_maps();
         float compute_minimum_cost_matching();
         bool is_solved();
+        bool is_freeze_deadlocked();
 };

@@ -48,9 +48,14 @@ void TunnelMacroCreator::compute_macros_internal()
     {
         compute_tunnel_members(box);
         if(box->tunnel_type == Two_Way && box->tunnel_members.size() == 0)
+        {
             box->tunnel_type = None;
+            continue;
+        }
         if(box->tunnel_type == Two_Way)
+        {
             create_two_way_macro(box);
+        }
         else if(box->tunnel_type == One_Way)
             create_one_way_macro(box);
 
@@ -70,11 +75,6 @@ void TunnelMacroCreator::compute_macros_internal()
 
         std::cout << std::endl;
     }
-
-    //Create the actual macros and save them on the box.
-    //Compute the cost of the macro move.
-    //Implement this in move data structure, just a linked list of moves, should be rather easy
-    //Implement this in perform move, see above.
 
 }
 
@@ -125,7 +125,13 @@ Tunnel_Type TunnelMacroCreator::set_tunnel_type(Sokoban_Box *box)
     this->the_board->calc_reachable(Move_Direction::none);
     Tunnel_Type type;
     if(this->the_board->is_reachable(opposite_box))
-        type = Tunnel_Type::Two_Way;
+    {
+        //Two way tunnels need to be real tunnels.
+        if(box->is_tunnel(false))
+            type = Tunnel_Type::Two_Way;
+        else
+            type = None;
+    }
     else
         type = Tunnel_Type::One_Way;
 
@@ -186,11 +192,9 @@ void TunnelMacroCreator::compute_tunnel_members(Sokoban_Box *entrance)
         else
             return; //Single box tunnel
     }
+    //std::cout << tunnel_dir << std::endl;
 
     nb = entrance->get_neighbour(tunnel_dir);
-    //If this is a two way tunnel, offset the entrance one, as it could be used for parking
-    if(entrance->nb_down->tunnel_type == Two_Way)
-        entrance = nb;
     while(nb->tunnel_type == entrance->tunnel_type)
     {
         entrance->tunnel_members.push_back(nb);
@@ -199,9 +203,29 @@ void TunnelMacroCreator::compute_tunnel_members(Sokoban_Box *entrance)
     return;
 }
 
-void TunnelMacroCreator::create_two_way_macro(Sokoban_Box *entrance)
+void TunnelMacroCreator::create_two_way_macro(Sokoban_Box* &entrance)
 {
-    entrance->is_solid();
+    //Find direction the tunnel is in.
+    Move_Direction tunnel_dir = none;
+    if(entrance->tunnel_members.front() == entrance->nb_up) tunnel_dir = up;
+    else if(entrance->tunnel_members.front() == entrance->nb_down) tunnel_dir = down;
+    else if(entrance->tunnel_members.front() == entrance->nb_left) tunnel_dir = left;
+    else if(entrance->tunnel_members.front() == entrance->nb_right) tunnel_dir = right;
+
+    //the entrance should be the square square, as it may be used for parking.
+
+    Sokoban_Box *real_entry = entrance->get_neighbour(tunnel_dir);
+
+    //Add the entrance itself to the macro.
+    real_entry->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir, real_entry));
+
+    //Add the members to the macro
+    for(auto &member : entrance->tunnel_members)
+    {
+        if(member == real_entry) continue;
+        real_entry->macro_move[(int)tunnel_dir].push_back(move(tunnel_dir, member));
+    }
+    entrance = real_entry;
 }
 void TunnelMacroCreator::create_one_way_macro(Sokoban_Box *entrance)
 {

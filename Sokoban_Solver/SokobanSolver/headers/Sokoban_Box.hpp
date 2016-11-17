@@ -35,7 +35,7 @@ class Sokoban_Box
 {
     private:
     public:
-        int64_t _deadlocked = 0; //s64 because we parse a random number into the, and it should be unreasonable to get the same two times in a row.
+        int64_t _deadlocked = 0xFFFFFFFFFFFF; //s64 because we parse a random number into the, and it should be unreasonable to get the same two times in a row.
         //negative means not deadlocked
 
 
@@ -68,7 +68,7 @@ class Sokoban_Box
         Position pos;
         //Change which type the box is.
         void change_type(Box_Type new_type);
-
+        std::vector<Sokoban_Box *> freeze_group;
         //Move the box given by move_box.
         //The box itself is actually not moved, instead, the type of the origin
         //and destination box is simply change accordingly.
@@ -88,9 +88,11 @@ class Sokoban_Box
         bool is_moveable(Move_Direction dir) const;
         bool is_deadlocked();
         bool is_pullable(Move_Direction dir);
-        bool is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
+        bool is_freeze_deadlocked(int64_t rand_num);
         void propegate_deadlock(int64_t rand_num, const Move_Direction *no_check_dir = nullptr);
-        bool is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2);
+        bool is_freeze_deadlocked_helper(int64_t rand_num, Move_Direction dir1, Move_Direction dir2,  std::vector<Sokoban_Box *> &grp);
+        bool is_freeze_deadlocked(int64_t rand_num, const Move_Direction *no_check_dir, std::vector<Sokoban_Box *> &grp);
+
         friend std::ostream& operator<<(std::ostream& os, const Sokoban_Box& box)
         {
             os << "(" << box.pos.x_pos << "," << box.pos.y_pos << ")";

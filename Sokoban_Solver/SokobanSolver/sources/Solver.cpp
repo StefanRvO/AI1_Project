@@ -25,7 +25,6 @@ bool Solver::solve()
     std::cout << *this->board->player_box << std::endl;
     std::cout << *this->board << std::endl;
     */
-
     this->board->calc_reachable(Move_Direction::none);
     //std::cout << this->board->get_reachable_map() << std::endl;
     __attribute__((unused))state_entry *goal_entry = A_star_solve();
@@ -64,6 +63,12 @@ bool Solver::solve()
             else
                 std::cout << std::endl;
         this->board->perform_move(the_move, false, true);
+        /*std::cout << *this->board << std::endl;
+        this->board->perform_move(the_move, true, false);
+        std::cout << *this->board << std::endl;
+        this->board->perform_move(the_move, false, true);
+        std::cout << *this->board << std::endl;*/
+
         //std::cout << *this->board << std::endl;
         //state_entry* this_entry = ttable.get_entry(*this->board);
         //std::cout << this_entry->heuristic << "\t" << this_entry->cost_to_state << "\t" << this_entry->full_key <<   std::endl;
@@ -90,11 +95,12 @@ uint32_t Solver::ttable_size()
 
 state_entry *Solver::A_star_solve()
 {
+    uint32_t frozen = 0;
     std::cout << std::fixed << std::setprecision(1);
     //Solve the sokoban puzzle using an A* algorithm
     std::list<float> move_costs;
     //Add initial state to ttable and open list
-    move init_move = move(Move_Direction::none, this->board->player_box);
+    move init_move = move(Move_Direction::none, this->board->player_box, true);
     state_entry *current = nullptr;
     float h = 0;
     ttable.check_table(*this->board, 0, &h, init_move, nullptr, 0, current);
@@ -133,7 +139,6 @@ state_entry *Solver::A_star_solve()
             float move_cost = move_costs.front();
             move_costs.pop_front();
             this->board->perform_move(the_move, false, false);
-
             if(this->ttable.check_table(*this->board, current->cost_to_state + move_cost, &h,
                 the_move, current, current->total_moves + 1, neighbour) == false)
             {
