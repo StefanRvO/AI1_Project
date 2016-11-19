@@ -4,7 +4,6 @@
 #include "Sokoban_Box.hpp"
 #include <string>
 #include <map>
-#include <random>
 #include <set>
 #include <dlib/optimization/max_cost_assignment.h>
 
@@ -21,10 +20,6 @@
 class Sokoban_Board;
 class Sokoban_Board
 {
-    private:
-     std::uniform_int_distribution<int64_t> rand_gen;
-     std::random_device rd;
-     std::mt19937_64 gen;
     public:
         //The actual board structure.
         std::vector< std::vector <Sokoban_Box> > board;

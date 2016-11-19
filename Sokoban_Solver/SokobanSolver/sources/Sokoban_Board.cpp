@@ -128,7 +128,7 @@ Sokoban_Board::~Sokoban_Board()
 
 //Copy constructor
 Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
-: rand_gen(_board.rand_gen), gen(_board.gen), cost_matrix(_board.cost_matrix)
+: cost_matrix(_board.cost_matrix)
 {
     this->board = _board.board;
     this->size_x = _board.size_x;
@@ -139,8 +139,7 @@ Sokoban_Board::Sokoban_Board(Sokoban_Board &_board)
 }
 
 Sokoban_Board::Sokoban_Board(std::string &board_str)
-: rand_gen(1, 0x0FFFFFFFFFFFFFFF),  gen(this->rd()), cost_matrix(1,1)
-
+: cost_matrix(1,1)
 {
     //Split into the rows.
     std::vector<std::string> rows;
@@ -397,15 +396,11 @@ void Sokoban_Board::perform_move(const move &the_move, bool reverse, bool recalc
 
         Sokoban_Box::move(box, this->player_box, the_move.first, reverse);
     }
-    #ifndef NDEBUG
-    auto start_size = this->board_boxes.size();
-    #endif
     this->board_boxes.erase(start_pos);
     this->board_boxes.insert(std::pair<Sokoban_Box *,Sokoban_Box *>(end_pos, end_pos));
     //Recalculate reachable zone
     if(recalculate)
         this->calc_reachable(the_move.first);
-    assert(start_size == this->board_boxes.size());
 }
 
 float Sokoban_Board::get_heuristic()
@@ -528,15 +523,8 @@ void Sokoban_Board::calc_reachable_helper(Sokoban_Box *neighbour, Sokoban_Box *c
     //std::cout << "new cost" << new_distance << std::endl;
     if(new_distance < neighbour->cost_to_box)
     {
-        //Remove and insert into queue
-        //std::cout << "replaces" << std::endl;
         auto itt = reachable_open_list.find(neighbour);
-        if(itt == reachable_open_list.end())
-        {
-            assert(false);
-            reachable_open_list.insert(neighbour);
-            return;
-        }
+        assert(itt != reachable_open_list.end());
         neighbour->cost_to_box = new_distance;
         neighbour->parent_node = current;
         neighbour->move_dir = move_dir;

@@ -54,6 +54,10 @@ void solve_board(std::string &board_str, po::variables_map &vm)
 {
     Sokoban_Board board(board_str);
     //Create the solver
+    if(vm.count("print_board"))
+    {
+        std::cout << board.get_board_str(true) << std::endl;
+    }
     Solver SSolver(&board, vm.count("silent"));
     the_solver = &SSolver;
     //Solve
@@ -104,6 +108,7 @@ int main(int argc, char **argv)
     ("silent,s", "Make the solver silent, i.e., don't print current search depth etc.")
     ("print_solution,p", "Print the solution after the board have been solved")
     ("statistics", "Print statistics for the solved board")
+    ("print_board", "print the board before starting the solver")
     ("help,h", "Print help messages");
     po::variables_map vm;
     std::vector<std::string> boards;

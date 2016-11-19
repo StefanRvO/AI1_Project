@@ -44,7 +44,7 @@ void TunnelMacroCreator::compute_macros_internal()
             create_one_way_macro(box);
 
         //Print the created macro move
-        /*std::cout << *box << " ";
+        std::cout << *box << " ";
         for(auto &the_move : box->macro_move[0])
             std::cout << the_move << " ";
         std::cout << "| ";
@@ -57,7 +57,7 @@ void TunnelMacroCreator::compute_macros_internal()
         for(auto &the_move : box->macro_move[3])
             std::cout << the_move << " ";
 
-        std::cout << std::endl;*/
+        std::cout << std::endl;
     }
 
 }
@@ -103,6 +103,7 @@ Tunnel_Type TunnelMacroCreator::set_tunnel_type(Sokoban_Box *box)
         opposite_box = box->nb_down;
         break;
     }
+    if(player_box->is_solid()) return None;
     player_box->insert_player();
     box->insert_box();
     this->the_board->player_box = player_box;

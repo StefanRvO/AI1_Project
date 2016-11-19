@@ -7,8 +7,9 @@
 #include "Sokoban_Board.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <list>
+#include <forward_list>
 #include <limits>
-#define MAX_BOXES 20
+#define MAX_BOXES 10
 #define BITS_PER_COORD 6
 
 #define BITS_TO_KEY ((MAX_BOXES + 1) * BITS_PER_COORD * 2)
@@ -94,7 +95,7 @@ struct state_entry
 
 struct bucket
 {
-    std::list<state_entry> entries;
+    std::forward_list<state_entry> entries;
     float insert_entry(key_type _full_key, float _cost_to_state, move &last_move, state_entry *parent_node, uint32_t depth, state_entry* &this_node, const Sokoban_Board &board)
     {
         //static uint32_t insertions = 0;
@@ -109,8 +110,8 @@ struct bucket
         new_entry.last_move = last_move;
         new_entry.parent_entry = parent_node;
         new_entry.total_moves = depth;
-        entries.push_back(new_entry);
-        this_node = &entries.back();
+        entries.push_front(new_entry);
+        this_node = &entries.front();
         return new_entry.heuristic;
     }
 
@@ -128,7 +129,7 @@ struct bucket
     }
     uint32_t get_size()
     {
-        return this->entries.size();
+        return std::distance(this->entries.begin(), this->entries.end());
     }
 };
 
