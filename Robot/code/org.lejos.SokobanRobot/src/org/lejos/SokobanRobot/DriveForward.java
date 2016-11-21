@@ -67,6 +67,7 @@ public class DriveForward  implements Behavior {
             int degree_driven = MotorL.getTachoCount() - DriveForward.start_degrees;
             if(degree_driven >= DriveForward.goal_degrees)
             {
+                DriveForward.goal_degrees = INFINITY;
                 return true;
             }
         }

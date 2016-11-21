@@ -114,4 +114,5 @@ class Sokoban_Board
         {
             return this->board_boxes.size();
         }
+        std::string get_robot_movements(std::string man_movements);
 };

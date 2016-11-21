@@ -19,7 +19,7 @@ public class DecisionMaker  implements Behavior {
     //String lol = "flfrfrfrfrflflfl";  // 8-tal    <- awesome
     //String lol = "flflflfl"; // Kasse <- slightly less awesome
     //String lol = "flflflflbfrfrfrfrb"; // Kasse <- Med baglæns
-    String lol = "frfFblllfFb"; // Kasse <- Med baglæns
+    String lol = "frfFbflflflfFbf"; // Kasse <- Med baglæns
     private static DecisionMaker instance = null;
 
     //String lol = "ffbrfrfrffb";
@@ -32,6 +32,7 @@ public class DecisionMaker  implements Behavior {
     {
         if(instance == null)
         {
+            instance = new DecisionMaker();
         }
         return instance;
     }
@@ -39,7 +40,7 @@ public class DecisionMaker  implements Behavior {
     public boolean takeControl()
     {
         //System.out.println(cross_detector.noticed_cross_section());
-        if(cross_detector.noticed_cross_section() && turner.turning() == false ||
+        if( (cross_detector.noticed_cross_section() && turner.turning() == false) ||
             this.can_placed == true)
             return true;
         return false;
@@ -59,13 +60,18 @@ public class DecisionMaker  implements Behavior {
             System.out.println( this.lol.charAt(this.position) );
         }
         catch(Exception e){}
+        if( this.position == this.lol.length() ){
+            MotorL.stop( true );
+            MotorR.stop( true );
+            while(true);
+        }
         this.can_placed = false;
         if (this.lol.charAt(this.position) == 'f'){
             cross_detector.unset_cross_section();
         }
         if (this.lol.charAt(this.position) == 'F'){
             cross_detector.unset_cross_section();
-            DriveForward.set_goal_degrees(490);
+            DriveForward.set_goal_degrees(425);
         }
         else if(this.lol.charAt(this.position) == 'l'){
             cross_detector.unset_cross_section();
@@ -87,12 +93,7 @@ public class DecisionMaker  implements Behavior {
             cross_detector.unset_cross_section();
             turner.doTurn(Direction.back, 1, false);
         }
-
-        if( this.position == this.lol.length()-1 ){
-            //position = 0;
-        }else{
-            this.position++;
-        }
+        this.position++;
 
         suppressed = false;
 
@@ -113,9 +114,9 @@ public class DecisionMaker  implements Behavior {
             }
             catch(InterruptedException e){}
 
-            MotorL.stop( true );
-            MotorR.stop( true );
-            while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+            //MotorL.stop( true );
+            //MotorR.stop( true );
+            //while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
         }
         return;
     }

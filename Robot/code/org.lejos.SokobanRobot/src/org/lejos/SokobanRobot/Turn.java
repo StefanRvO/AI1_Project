@@ -70,7 +70,7 @@ public class Turn  extends Thread implements Behavior {
             MotorR.backward();
 
             try{
-                Thread.sleep(1000);
+                Thread.sleep(400);
             }
             catch(InterruptedException e){}
             this.direction = Direction.right;
@@ -91,7 +91,7 @@ public class Turn  extends Thread implements Behavior {
         wait_for_new_crossection();
         if(this.push_box == true)
         {
-            forward_driver.set_goal_degrees(400); //TODO: ADJUST MORE PRECISLY
+            DriveForward.set_goal_degrees(150); //TODO: ADJUST MORE PRECISLY
             this.push_box =  false;
         }
     }
