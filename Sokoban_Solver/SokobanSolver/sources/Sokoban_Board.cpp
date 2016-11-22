@@ -558,7 +558,7 @@ float Sokoban_Board::get_turn_direction_cost(Move_Direction last_dir, Move_Direc
             if      (this_dir == up) return RIGHT_COST;
             else if (this_dir == down) return LEFT_COST;
             else if (this_dir == left) return FORWARD_COST;
-            else if (this_dir == right) return RIGHT_COST;
+            else if (this_dir == right) return BACKWARD_COST;
         break;
         case right:
             if      (this_dir == up) return LEFT_COST;
@@ -760,33 +760,73 @@ bool Sokoban_Board::calculate_cost_map_helper(const Sokoban_Box *this_box, Move_
     return false;
 }
 
-/*
-void Sokoban_Board::calc_reachable(__attribute__((unused)) Move_Direction last_move_dir)
+
+
+std::string Sokoban_Board::get_robot_movements(std::string &man_moves)
 {
-    this->upper_left_reachable = this->player_box;
-    for(uint32_t x = 0; x < this->size_x; x++)
-        for(uint32_t y = 0; y < this->size_y; y++)
-            this->board[x][y].cost_to_box = INFINITY_F;
+    Move_Direction current_dir = get_move_direction(man_moves.front());
+    std::string robot_movements = "";
+    switch(man_moves.front())
+    {
+        case 'U': case 'D': case 'R': case 'L':
+            robot_movements += "fFbf";
+            current_dir = get_reverse_direction(current_dir);
+            break;
+        case 'u': case 'd': case 'r': case 'l':
+            robot_movements += 'f';
+            break;
+    }
+    for(auto itt = man_moves.begin() + 1; itt != man_moves.end(); itt++)
+    {
+        //std::cout << "!" << std::endl;
+        auto &the_move = *itt;
+        auto next_move = 'd';
 
-    this->board[player_box->pos.x_pos][player_box->pos.y_pos].cost_to_box = 1;
-    if(!player_box->nb_up->is_solid())      this->calc_reachable_rec(player_box->nb_up);
-    if(!player_box->nb_down->is_solid())    this->calc_reachable_rec(player_box->nb_down);
-    if(!player_box->nb_left->is_solid())    this->calc_reachable_rec(player_box->nb_left);
-    if(!player_box->nb_right->is_solid())   this->calc_reachable_rec(player_box->nb_right);
+        if(itt + 1 != man_moves.end())
+        {
+            next_move = *(itt + 1);
+        }
+
+        Move_Direction next_direction = get_move_direction(the_move);
+        //std::cout << man_moves.size() << std::endl;
+
+        switch(current_dir)
+        {
+            case up:
+                if      (next_direction == up) robot_movements += "f";
+                else if (next_direction == down) robot_movements += "bf";
+                else if (next_direction == left) robot_movements += "lf";
+                else if (next_direction == right) robot_movements += "rf";
+                break;
+            case down:
+                if      (next_direction == up)  robot_movements +=  "bf";
+                else if (next_direction == down)  robot_movements +=  "f";
+                else if (next_direction == left)  robot_movements +=  "rf";
+                else if (next_direction == right)   robot_movements += "lf";
+                break;
+            case left:
+                if      (next_direction == up)  robot_movements += "rf";
+                else if (next_direction == down)  robot_movements += "lf";
+                else if (next_direction == left)  robot_movements += "f";
+                else if (next_direction == right)  robot_movements += "bf";
+                break;
+            case right:
+                if      (next_direction == up)  robot_movements += "lf";
+                else if (next_direction == down)  robot_movements += "rf";
+                else if (next_direction == left)  robot_movements += "bf";
+                else if (next_direction == right)  robot_movements += "f";
+                break;
+            default: assert(false);
+        }
+        current_dir = next_direction;
+        if(std::isupper(the_move))
+        {
+            if(!std::isupper(next_move) || the_move != next_move)
+            {
+                robot_movements += "Fbf";
+                current_dir = get_reverse_direction(current_dir);
+            }
+        }
+    }
+    return robot_movements.substr(0, robot_movements.size() - 2);
 }
-
-void Sokoban_Board::calc_reachable_rec(Sokoban_Box *box)
-{
-    if(box->pos < this->upper_left_reachable->pos) upper_left_reachable = box;
-    this->board[box->pos.x_pos][box->pos.y_pos].cost_to_box = 1;
-    if(!box->nb_up->is_solid() && !this->is_reachable(box->nb_up))
-        this->calc_reachable_rec(box->nb_up);
-    if(!box->nb_down->is_solid() && !this->is_reachable(box->nb_down))
-        this->calc_reachable_rec(box->nb_down);
-    if(!box->nb_left->is_solid() && !this->is_reachable(box->nb_left))
-        this->calc_reachable_rec(box->nb_left);
-    if(!box->nb_right->is_solid() && !this->is_reachable(box->nb_right))
-        this->calc_reachable_rec(box->nb_right);
-
-}
-*/

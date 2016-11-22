@@ -24,6 +24,7 @@ bool operator<(const Position &pos1, const Position &pos2);
 
 unsigned char get_direction_char(Move_Direction &dir);
 Move_Direction get_reverse_direction(Move_Direction dir);
+Move_Direction get_move_direction(unsigned char dir);
 
 
 class Sokoban_Box;

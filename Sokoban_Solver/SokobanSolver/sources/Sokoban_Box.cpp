@@ -41,6 +41,20 @@ float Sokoban_Box::get_cost_to_box(Sokoban_Box &box)
     return (*this->cost_map)[box.pos.x_pos][box.pos.y_pos];
 }
 
+Move_Direction get_move_direction(unsigned char dir)
+{
+    switch(dir)
+    {
+        case 'u': case 'U':    return Move_Direction::up;
+        case 'd': case 'D':    return Move_Direction::down;
+        case 'l': case 'L':    return Move_Direction::left;
+        case 'r': case 'R':    return Move_Direction::right;
+        case '-':              return Move_Direction::none;
+    }
+    assert(false);
+    return Move_Direction::none;
+}
+
 unsigned char get_direction_char(Move_Direction &dir)
 {
     switch(dir)
@@ -54,7 +68,6 @@ unsigned char get_direction_char(Move_Direction &dir)
     assert(false);
     return ' ';
 }
-
 
 Sokoban_Box::~Sokoban_Box()
 {

@@ -13,7 +13,7 @@
 #define FORWARD_COST 0.
 #define BACKWARD_COST 0.
 
-#define MOVE_COST 0.1 //Cost added to all move types
+#define MOVE_COST 0.01 //Cost added to all move types
 #define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
 
 
@@ -114,5 +114,5 @@ class Sokoban_Board
         {
             return this->board_boxes.size();
         }
-        std::string get_robot_movements(std::string man_movements);
+        static std::string get_robot_movements(std::string &man_movements);
 };

@@ -13,7 +13,6 @@ public class DriveForward  implements Behavior {
     protected static NXTRegulatedMotor MotorR = Motor.C;
     protected static int goal_degrees = 0; //Which tacho count we want to drive to.
                           //Zero means infinity.
-    protected int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
     protected static DriveForward instance = null;
     protected DecisionMaker the_brain = DecisionMaker.getInstance();
     protected static int start_degrees = 0;
@@ -47,8 +46,8 @@ public class DriveForward  implements Behavior {
         suppressed = false;
         MotorL.forward();
         MotorR.forward();
-        MotorL.setSpeed(maxSpeed);
-        MotorR.setSpeed(maxSpeed);
+        MotorL.setSpeed(Settings.get_max_forward_speed());
+        MotorR.setSpeed(Settings.get_max_forward_speed());
         //System.out.println(this.goal_degrees);
         if(test_degrees())
         {

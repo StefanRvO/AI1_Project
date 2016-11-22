@@ -25,7 +25,6 @@ public class Turn  extends Thread implements Behavior {
     public Direction direction = Direction.none;
     public int turn_count;
     private static Turn instance = null;
-    private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
     private Boolean push_box = false;
 
     public boolean takeControl()
@@ -61,11 +60,11 @@ public class Turn  extends Thread implements Behavior {
     }
 
     public void action() {
-        MotorL.setSpeed( (int)(maxSpeed * 0.50));
-        MotorR.setSpeed( (int)(maxSpeed * 0.50));
+        MotorL.setSpeed( Settings.get_max_turn_speed());
+        MotorR.setSpeed( Settings.get_max_turn_speed());
 
         if(this.direction == Direction.back){
-            System.out.println("Doing a 180");
+            //System.out.println("Doing a 180");
             MotorL.backward();
             MotorR.backward();
 
@@ -77,12 +76,12 @@ public class Turn  extends Thread implements Behavior {
         }
 
         if(this.direction == Direction.left){
-            System.out.println("Turning left");
+            //System.out.println("Turning left");
             MotorL.backward();
             MotorR.forward();
         }
         else if(this.direction == Direction.right){
-            System.out.println("Turning right");
+            //System.out.println("Turning right");
             MotorL.forward();
             MotorR.backward();
         }
@@ -98,7 +97,7 @@ public class Turn  extends Thread implements Behavior {
 
     public void wait_for_new_crossection()
     {
-        System.out.println("Waiting for CX");
+        //System.out.println("Waiting for CX");
 
         while(this.turn_count > 0)
         {
@@ -144,7 +143,7 @@ public class Turn  extends Thread implements Behavior {
                 RA_L.add_sample(linelight_left.readValue());
             }
 
-            cross_detector.set_suspend_crossdector( 100 );
+            cross_detector.set_suspend_crossdector( 30 );
 
             if(this.turn_count > 0){
                 this.turn_count--;

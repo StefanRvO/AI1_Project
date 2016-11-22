@@ -69,7 +69,13 @@ void solve_board(std::string &board_str, po::variables_map &vm)
         SSolver.solve();
     if(vm.count("print_solution"))
     {
-        std::cout << SSolver.get_player_moves() << std::endl;
+        std::string player_moves = SSolver.get_player_moves();
+        std::cout << player_moves << std::endl;
+    }
+    if(vm.count("robot"))
+    {
+        std::string player_moves = SSolver.get_player_moves();
+        std::cout << Sokoban_Board::get_robot_movements(player_moves) << std::endl;
     }
 
     if(vm.count("statistics"))
@@ -109,6 +115,7 @@ int main(int argc, char **argv)
     ("print_solution,p", "Print the solution after the board have been solved")
     ("statistics", "Print statistics for the solved board")
     ("print_board", "print the board before starting the solver")
+    ("robot,r", "print string for the robot")
     ("help,h", "Print help messages");
     po::variables_map vm;
     std::vector<std::string> boards;

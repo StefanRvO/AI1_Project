@@ -12,14 +12,15 @@ public class DecisionMaker  implements Behavior {
     private boolean suppressed = false;
     private CrossSectionDetector cross_detector = CrossSectionDetector.getInstance();
     private Turn turner = Turn.getInstance();
-    private int maxSpeed = (int)(MotorL.getMaxSpeed() * 0.7 );
     private int position = 0;
     private Boolean can_placed = false;
     //String lol = "flfrfrfrfrflflfbrfrflflflflfrfrb";  // 8-tal STORT
     //String lol = "flfrfrfrfrflflfl";  // 8-tal    <- awesome
     //String lol = "flflflfl"; // Kasse <- slightly less awesome
     //String lol = "flflflflbfrfrfrfrb"; // Kasse <- Med baglæns
-    String lol = "frfFbflflflfFbf"; // Kasse <- Med baglæns
+    //String lol = "flffFbffrfFbflfffffFbfrfrffrffrfrfFbfrffrfflffflffFbflflfrffrfrffFbffrfrfFbflflfffffFbfrffrffrfrfFbffrffrfrfFbfrffrfflffflfFbflflflffffFbfflffrffrfFbfrfrfrfffFbflflflffFbffrflffrfrfFbfrfrfrffFbflflflfFbflfFbfffffrffrfffF";
+    String lol = "fFbfrfrfFbfflfrflfflflfFbflffFbffrfFbflfffffFbfrfrffrffrfrfFbfrffrfflffflffFbflflfrffrfrffFbffrfrfFbflflfffffFbfrffrffrfrfFbffrffrfrfFbfrffrfflffflfFbflflflffffFbfflffrffrfFbfrfrfrfffFbflflflffFbffrflffrfrfFbfrfrfrffFbflflflfFbflfFbfffffrffrfffF"; // Kasse <- Med baglæns
+    
     private static DecisionMaker instance = null;
 
     //String lol = "ffbrfrfrffb";
@@ -56,47 +57,41 @@ public class DecisionMaker  implements Behavior {
 
     public void action() {
         try{
-            System.out.println("Detected cross section!");
             System.out.println( this.lol.charAt(this.position) );
         }
         catch(Exception e){}
         if( this.position == this.lol.length() ){
             MotorL.stop( true );
             MotorR.stop( true );
-            while(true);
+            while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+            System.exit(0);
         }
         this.can_placed = false;
         if (this.lol.charAt(this.position) == 'f'){
-            cross_detector.unset_cross_section();
+            cross_detector.set_suspend_crossdector( 10 );
         }
-        if (this.lol.charAt(this.position) == 'F'){
-            cross_detector.unset_cross_section();
+        else if (this.lol.charAt(this.position) == 'F'){
+            cross_detector.set_suspend_crossdector( 10 );
             DriveForward.set_goal_degrees(425);
         }
         else if(this.lol.charAt(this.position) == 'l'){
-            cross_detector.unset_cross_section();
             turner.doTurn(Direction.left, 1, false);
         }
         else if(this.lol.charAt(this.position) == 'L'){
-            cross_detector.unset_cross_section();
             turner.doTurn(Direction.left, 1, true);
         }
         else if(this.lol.charAt(this.position) == 'r'){
-            cross_detector.unset_cross_section();
             turner.doTurn(Direction.right, 1, false);
         }
         else if(this.lol.charAt(this.position) == 'R'){
-            cross_detector.unset_cross_section();
             turner.doTurn(Direction.right, 1, true);
         }
         else if(this.lol.charAt(this.position) == 'b'){
-            cross_detector.unset_cross_section();
             turner.doTurn(Direction.back, 1, false);
         }
-        this.position++;
+        cross_detector.unset_cross_section();
 
         suppressed = false;
-
         if( this.lol.charAt(this.position) != 'f' && this.lol.charAt(this.position) != 'F' &&
             this.lol.charAt(this.position) != 'b')
         {
@@ -106,11 +101,11 @@ public class DecisionMaker  implements Behavior {
             *   2016-11-14 - Tested from multiple directions with sleep 80 and 100
             *                   This works well with fully charged battery-pack
             */
-            MotorL.setSpeed( maxSpeed );
-            MotorR.setSpeed( maxSpeed );
+            MotorL.setSpeed( Settings.get_max_forward_speed() );
+            MotorR.setSpeed( Settings.get_max_forward_speed() );
 
             try{
-                Thread.sleep( 200 );
+                Thread.sleep( 150 );
             }
             catch(InterruptedException e){}
 
@@ -118,6 +113,7 @@ public class DecisionMaker  implements Behavior {
             //MotorR.stop( true );
             //while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
         }
+        this.position++;
         return;
     }
 }

@@ -44,19 +44,19 @@ public class AdjustRight  extends DriveForward implements Behavior {
         if(diff < 15){
             double multiplier = (double)(light_threshold) / (diff);
             if(multiplier > thres) multiplier = thres;
-            MotorL.setSpeed( (int)(maxSpeed * multiplier ) );
+            MotorL.setSpeed( (int)(Settings.get_max_forward_speed() * multiplier ) );
         }
         else if(diff < 25){
             double multiplier = (double)(light_threshold) / (diff * 1.6);
             if(multiplier > thres) multiplier = thres;
-            MotorL.setSpeed( (int)(maxSpeed * multiplier ) );
+            MotorL.setSpeed( (int)(Settings.get_max_forward_speed() * multiplier ) );
         }
         else{
             double multiplier = (double)(light_threshold) / (diff * 2.1);
             if(multiplier > thres) multiplier = thres;
-            MotorL.setSpeed( (int)(maxSpeed * multiplier ) );
+            MotorL.setSpeed( (int)(Settings.get_max_forward_speed() * multiplier ) );
         }
-        MotorR.setSpeed( maxSpeed );
+        MotorR.setSpeed( Settings.get_max_forward_speed() );
 
         MotorL.forward();
         MotorR.forward();

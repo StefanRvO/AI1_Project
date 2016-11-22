@@ -75,7 +75,7 @@ uint32_t Solver::max_ttable_size()
 
 state_entry *Solver::A_star_solve()
 {
-    std::cout << std::fixed << std::setprecision(1);
+    std::cout << std::fixed << std::setprecision(3);
     //Solve the sokoban puzzle using an A* algorithm
     std::list<float> move_costs;
     //Add initial state to ttable and open list

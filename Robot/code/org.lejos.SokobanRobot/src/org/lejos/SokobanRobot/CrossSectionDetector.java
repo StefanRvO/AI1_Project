@@ -54,7 +54,7 @@ public class CrossSectionDetector  extends Thread implements Behavior {
 
             last_diff = RA_100.get_average() - RA_5.get_average();
 
-            if(last_diff > 10 && !cross_section && this.counter == 0){
+            if(last_diff > 7 && this.counter == 0){
                 cross_section = true;
             }
 
