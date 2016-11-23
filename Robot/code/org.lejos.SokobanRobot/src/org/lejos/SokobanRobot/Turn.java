@@ -60,8 +60,8 @@ public class Turn  extends Thread implements Behavior {
     }
 
     public void action() {
-        MotorL.setSpeed( Settings.get_max_turn_speed());
-        MotorR.setSpeed( Settings.get_max_turn_speed());
+        MotorL.setSpeed( Settings.get_max_backward_speed());
+        MotorR.setSpeed( Settings.get_max_backward_speed());
 
         if(this.direction == Direction.back){
             //System.out.println("Doing a 180");
@@ -69,7 +69,7 @@ public class Turn  extends Thread implements Behavior {
             MotorR.backward();
 
             try{
-                Thread.sleep(400);
+                Thread.sleep(200);
             }
             catch(InterruptedException e){}
             this.direction = Direction.right;

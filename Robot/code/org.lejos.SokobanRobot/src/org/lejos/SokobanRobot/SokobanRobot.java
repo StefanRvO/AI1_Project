@@ -12,7 +12,7 @@ import lejos.nxt.Sound;
 public class SokobanRobot {
 
 	public static void main(String[] args) {
-        Sound.setVolume(100);
+        Sound.setVolume(20);
         LightSensor crosslight = new LightSensor(SensorPort.S1);
         LightSensor linelight_right = new LightSensor(SensorPort.S3);
         LightSensor linelight_left = new LightSensor(SensorPort.S4);

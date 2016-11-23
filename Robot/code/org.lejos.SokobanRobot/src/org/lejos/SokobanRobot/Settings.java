@@ -14,6 +14,10 @@ public class Settings{
     }
     static public int get_max_turn_speed()
     {
-        return (int)(Settings.get_max_forward_speed() * 0.5 );
+        return (int)(Settings.MotorL.getMaxSpeed() * 0.7 );
+    }
+    static public int get_max_backward_speed()
+    {
+        return (int)(Settings.MotorL.getMaxSpeed() * 0.7 );
     }
 }
