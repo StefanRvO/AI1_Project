@@ -4,8 +4,12 @@ import lejos.nxt.*;
 import lejos.robotics.subsumption.*;
 import lejos.nxt.Motor;
 import lejos.robotics.subsumption.Behavior;
+import lejos.nxt.Sound;
 
 public class DecisionMaker  implements Behavior {
+    private int tones[] = {150, 2000};
+    private int tone_cnt = 0;
+
     NXTRegulatedMotor MotorL = Motor.A;
     NXTRegulatedMotor MotorR = Motor.C;
 
@@ -19,8 +23,10 @@ public class DecisionMaker  implements Behavior {
     //String lol = "flflflfl"; // Kasse <- slightly less awesome
     //String lol = "flflflflbfrfrfrfrb"; // Kasse <- Med baglæns
     //String lol = "flffFbffrfFbflfffffFbfrfrffrffrfrfFbfrffrfflffflffFbflflfrffrfrffFbffrfrfFbflflfffffFbfrffrffrfrfFbffrffrfrfFbfrffrfflffflfFbflflflffffFbfflffrffrfFbfrfrfrfffFbflflflffFbffrflffrfrfFbfrfrfrffFbflflflfFbflfFbfffffrffrfffF";
-    String lol = "fFbfrfrfFbfflfrflfflflfFbflffFbffrfFbflfffffFbfrfrffrffrfrfFbfrffrfflffflffFbflflfrffrfrffFbffrfrfFbflflfffffFbfrffrffrfrfFbffrffrfrfFbfrffrfflffflfFbflflflffffFbfflffrffrfFbfrfrfrfffFbflflflffFbffrflffrfrfFbfrfrfrffFbflflflfFbflfFbfffffrffrfffF"; // Kasse <- Med baglæns
-    
+    //String lol = "fFbrrfrrfFbllfllFbrrfrrFbllfllFbrrfrrFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfll";
+    //String lol = "FbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrF";
+    String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrfFbfrrFbllffffFbfrflfflFblllffFblllfFbllrfrrFbfrfrrFbrfflfrfrFbrrrfffFbflfrrFbrrrfFblllFblFbffffrfrffF";
+
     private static DecisionMaker instance = null;
 
     //String lol = "ffbrfrfrffb";
@@ -68,11 +74,11 @@ public class DecisionMaker  implements Behavior {
         }
         this.can_placed = false;
         if (this.lol.charAt(this.position) == 'f'){
-            cross_detector.set_suspend_crossdector( 10 );
+            cross_detector.set_suspend_crossdector( 100 );
         }
         else if (this.lol.charAt(this.position) == 'F'){
-            cross_detector.set_suspend_crossdector( 10 );
-            DriveForward.set_goal_degrees(425);
+            cross_detector.set_suspend_crossdector( 100 );
+            DriveForward.set_goal_degrees(480);
         }
         else if(this.lol.charAt(this.position) == 'l'){
             turner.doTurn(Direction.left, 1, false);
@@ -92,6 +98,7 @@ public class DecisionMaker  implements Behavior {
         cross_detector.unset_cross_section();
 
         suppressed = false;
+        Sound.playTone(tones[(tone_cnt++) % 2], 100);
         if( this.lol.charAt(this.position) != 'f' && this.lol.charAt(this.position) != 'F' &&
             this.lol.charAt(this.position) != 'b')
         {
@@ -105,13 +112,13 @@ public class DecisionMaker  implements Behavior {
             MotorR.setSpeed( Settings.get_max_forward_speed() );
 
             try{
-                Thread.sleep( 150 );
+                Thread.sleep( 200 );
             }
             catch(InterruptedException e){}
 
-            //MotorL.stop( true );
-            //MotorR.stop( true );
-            //while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
+            MotorL.stop( true );
+            MotorR.stop( true );
+            while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
         }
         this.position++;
         return;

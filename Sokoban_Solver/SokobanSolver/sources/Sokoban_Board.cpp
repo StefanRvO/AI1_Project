@@ -766,17 +766,7 @@ std::string Sokoban_Board::get_robot_movements(std::string &man_moves)
 {
     Move_Direction current_dir = get_move_direction(man_moves.front());
     std::string robot_movements = "";
-    switch(man_moves.front())
-    {
-        case 'U': case 'D': case 'R': case 'L':
-            robot_movements += "fFbf";
-            current_dir = get_reverse_direction(current_dir);
-            break;
-        case 'u': case 'd': case 'r': case 'l':
-            robot_movements += 'f';
-            break;
-    }
-    for(auto itt = man_moves.begin() + 1; itt != man_moves.end(); itt++)
+    for(auto itt = man_moves.begin(); itt != man_moves.end(); itt++)
     {
         //std::cout << "!" << std::endl;
         auto &the_move = *itt;
@@ -794,26 +784,26 @@ std::string Sokoban_Board::get_robot_movements(std::string &man_moves)
         {
             case up:
                 if      (next_direction == up) robot_movements += "f";
-                else if (next_direction == down) robot_movements += "bf";
-                else if (next_direction == left) robot_movements += "lf";
-                else if (next_direction == right) robot_movements += "rf";
+                else if (next_direction == down) robot_movements += "b";
+                else if (next_direction == left) robot_movements += "l";
+                else if (next_direction == right) robot_movements += "r";
                 break;
             case down:
-                if      (next_direction == up)  robot_movements +=  "bf";
+                if      (next_direction == up)  robot_movements +=  "b";
                 else if (next_direction == down)  robot_movements +=  "f";
-                else if (next_direction == left)  robot_movements +=  "rf";
-                else if (next_direction == right)   robot_movements += "lf";
+                else if (next_direction == left)  robot_movements +=  "r";
+                else if (next_direction == right)   robot_movements += "l";
                 break;
             case left:
-                if      (next_direction == up)  robot_movements += "rf";
-                else if (next_direction == down)  robot_movements += "lf";
+                if      (next_direction == up)  robot_movements += "r";
+                else if (next_direction == down)  robot_movements += "l";
                 else if (next_direction == left)  robot_movements += "f";
-                else if (next_direction == right)  robot_movements += "bf";
+                else if (next_direction == right)  robot_movements += "b";
                 break;
             case right:
-                if      (next_direction == up)  robot_movements += "lf";
-                else if (next_direction == down)  robot_movements += "rf";
-                else if (next_direction == left)  robot_movements += "bf";
+                if      (next_direction == up)  robot_movements += "l";
+                else if (next_direction == down)  robot_movements += "r";
+                else if (next_direction == left)  robot_movements += "b";
                 else if (next_direction == right)  robot_movements += "f";
                 break;
             default: assert(false);
@@ -823,10 +813,10 @@ std::string Sokoban_Board::get_robot_movements(std::string &man_moves)
         {
             if(!std::isupper(next_move) || the_move != next_move)
             {
-                robot_movements += "Fbf";
+                robot_movements += "Fb";
                 current_dir = get_reverse_direction(current_dir);
             }
         }
     }
-    return robot_movements.substr(0, robot_movements.size() - 2);
+    return robot_movements.substr(0, robot_movements.size() - 1);
 }

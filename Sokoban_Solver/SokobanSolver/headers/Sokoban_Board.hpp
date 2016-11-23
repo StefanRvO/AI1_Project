@@ -13,8 +13,8 @@
 #define FORWARD_COST 0.
 #define BACKWARD_COST 0.
 
-#define MOVE_COST 0.01 //Cost added to all move types
-#define PUSH_COST 1. //Cost for pushing a box(added to the above moves)
+#define MOVE_COST 1 //Cost added to all move types
+#define PUSH_COST 0.01 //Cost for pushing a box(added to the above moves)
 
 
 class Sokoban_Board;

@@ -132,7 +132,7 @@ public class Turn  extends Thread implements Behavior {
                 RA_L.add_sample(linelight_left.readValue());
             }
 
-            while(Math.abs(RA_R.get_average() - RA_L.get_average()) > 10)
+            while(Math.abs(RA_R.get_average() - RA_L.get_average()) > 5)
             {
                 try {
                     Thread.sleep((int)(1./this.frequency) * 1000);
@@ -143,18 +143,15 @@ public class Turn  extends Thread implements Behavior {
                 RA_L.add_sample(linelight_left.readValue());
             }
 
-            cross_detector.set_suspend_crossdector( 30 );
-
             if(this.turn_count > 0){
                 this.turn_count--;
-                cross_detector.unset_cross_section();
             }
         }
 
             MotorL.stop(true);
             MotorR.stop(true);
             while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
-            //Button.waitForAnyPress();
+            cross_detector.unset_cross_section();
     }
 
     public Boolean turning(){

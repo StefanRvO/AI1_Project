@@ -52,7 +52,7 @@ public class AdjustRight  extends DriveForward implements Behavior {
             MotorL.setSpeed( (int)(Settings.get_max_forward_speed() * multiplier ) );
         }
         else{
-            double multiplier = (double)(light_threshold) / (diff * 2.1);
+            double multiplier = (double)(light_threshold) / (diff * 2.5);
             if(multiplier > thres) multiplier = thres;
             MotorL.setSpeed( (int)(Settings.get_max_forward_speed() * multiplier ) );
         }
