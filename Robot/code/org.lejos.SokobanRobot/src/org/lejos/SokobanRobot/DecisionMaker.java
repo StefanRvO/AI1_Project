@@ -18,6 +18,9 @@ public class DecisionMaker  implements Behavior {
     private Turn turner = Turn.getInstance();
     private int position = 0;
     private Boolean can_placed = false;
+    long start_time = System.currentTimeMillis();
+    long end_time = System.currentTimeMillis();
+
     //String lol = "flfrfrfrfrflflfbrfrflflflflfrfrb";  // 8-tal STORT
     //String lol = "flfrfrfrfrflflfl";  // 8-tal    <- awesome
     //String lol = "flflflfl"; // Kasse <- slightly less awesome
@@ -27,10 +30,11 @@ public class DecisionMaker  implements Behavior {
     //String lol = "FbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrF";
     //String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfflfrrFbrrrfffFbfrflfflFbfrfffffrrFbfrfrrFbrffflrfrrffFblllfFbfrffrfrffFbffflfrlrfrrfFbfrrFbllfffFbrflfflFblllffFblllFblF"; //push optimal
     //String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrfFbfrrFbllffffFbrfrfrrFbfrfrrFbrfrflfflFblllfffFbflfrfrFbrrrffFblllfFbfrlfrrFbrrrfFblllFblFbffffrfrffF" //move optimal.
-    String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrffffffFbrfrfrrFbfrfrrFbrfflfrfrFbrfrfrFbllfffFbrflfflFblllffFblllfFbffrlrrFbrrrfFblllFblFbffffrfrffF"; //forward bias
+    //String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrffffffFbrfrfrrFbfrfrrFbrfflfrfrFbrfrfrFbllfffFbrflfflFblllffFblllfFbffrlrrFbrrrfFblllFblFbffffrfrffF"; //forward bias
+    String lol = "fFbrrFbflrlfllFblFbrFblffffFbrrfrfrrFbrffflfrrFbrrrffffFbrflffflfFbllrfrrffffFblllfFbllrfrrFbfrfrrFbrffffrfrffFblffrflrrFbrfrfrFbllfffFbrflfflFblllffFblllFblF";
     private static DecisionMaker instance = null;
 
-    //String lol = "ffbrfrfrffb";
+    //String lol = "Fb";
 
     protected DecisionMaker()
     {
@@ -63,16 +67,25 @@ public class DecisionMaker  implements Behavior {
     }
 
     public void action() {
-        try{
-            System.out.println( this.lol.charAt(this.position) );
-        }
-        catch(Exception e){}
         if( this.position == this.lol.length() ){
+
             MotorL.stop( true );
             MotorR.stop( true );
             while(MotorL.getRotationSpeed() != 0 && MotorR.getRotationSpeed() != 0);
-            System.exit(0);
+            end_time = System.currentTimeMillis();
+            System.out.print("T: ");
+            System.out.println(end_time - start_time);
+            Button.waitForAnyPress();
+            this.position = 0;
+
         }
+        if(this.position == 0)
+            start_time = System.currentTimeMillis();
+
+        /*try{
+            System.out.println( this.lol.charAt(this.position) );
+        }
+        catch(Exception e){}*/
         this.can_placed = false;
         if (this.lol.charAt(this.position) == 'f'){
             cross_detector.set_suspend_crossdector( 100 );
@@ -97,7 +110,6 @@ public class DecisionMaker  implements Behavior {
             turner.doTurn(Direction.back, 1, false);
         }
         cross_detector.unset_cross_section();
-
         suppressed = false;
         Sound.playTone(tones[(tone_cnt++) % 2], 100);
         if( this.lol.charAt(this.position) != 'f' && this.lol.charAt(this.position) != 'F' &&
@@ -113,7 +125,7 @@ public class DecisionMaker  implements Behavior {
             MotorR.setSpeed( Settings.get_max_forward_speed() );
 
             try{
-                Thread.sleep( 100 );
+                Thread.sleep( 90 );
             }
             catch(InterruptedException e){}
 

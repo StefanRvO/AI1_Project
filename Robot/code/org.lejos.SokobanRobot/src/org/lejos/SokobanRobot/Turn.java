@@ -11,11 +11,11 @@ public class Turn  extends Thread implements Behavior {
     //Thread CD_tread = new Thread(new CrossDetectorThread()).start();
     private static final int WAIT_TIME = 20; // wait time in milliseconds.
     private boolean suppressed = false;
-    LightSensor linelight_right = new LightSensor(SensorPort.S3);
-    LightSensor linelight_left = new LightSensor(SensorPort.S4);
     public int frequency = 1000;
-    RunningAverage RA_R =  new RunningAverage(this.frequency / 400, linelight_right.readValue());
-    RunningAverage RA_L =  new RunningAverage(this.frequency / 400, linelight_left.readValue());
+    LightSensor_Access light = new LightSensor_Access();
+
+    RunningAverage RA_R =  new RunningAverage(this.frequency / 400, light.get_right());
+    RunningAverage RA_L =  new RunningAverage(this.frequency / 400, light.get_left());
 
     private CrossSectionDetector cross_detector = CrossSectionDetector.getInstance();
     private DriveForward forward_driver = null;
@@ -74,7 +74,7 @@ public class Turn  extends Thread implements Behavior {
                 Thread.sleep(200);
             }
             catch(InterruptedException e){}
-            this.direction = Direction.right;
+            this.direction = Direction.left;
         }
 
         if(this.direction == Direction.left){
@@ -112,8 +112,8 @@ public class Turn  extends Thread implements Behavior {
                 */
 
                 Thread.sleep(250); //Wait to turn away from line
-                RA_R.fill_with_samples(linelight_right.readValue());
-                RA_L.fill_with_samples(linelight_left.readValue());
+                RA_R.fill_with_samples(light.get_right());
+                RA_L.fill_with_samples(light.get_left());
             }
             catch(InterruptedException e) {}
 
@@ -124,8 +124,8 @@ public class Turn  extends Thread implements Behavior {
                 }
                 catch(InterruptedException e){}
 
-                RA_R.add_sample(linelight_right.readValue());
-                RA_L.add_sample(linelight_left.readValue());
+                RA_R.add_sample(light.get_right());
+                RA_L.add_sample(light.get_left());
             }
 
             while(Math.abs(RA_R.get_average() - RA_L.get_average()) > 5)
@@ -135,8 +135,8 @@ public class Turn  extends Thread implements Behavior {
                 }
                 catch(InterruptedException e){}
 
-                RA_R.add_sample(linelight_right.readValue());
-                RA_L.add_sample(linelight_left.readValue());
+                RA_R.add_sample(light.get_right());
+                RA_L.add_sample(light.get_left());
             }
 
             if(this.turn_count > 0){

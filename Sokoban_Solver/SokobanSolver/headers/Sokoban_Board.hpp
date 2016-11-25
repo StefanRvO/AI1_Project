@@ -8,13 +8,13 @@
 #include <dlib/optimization/max_cost_assignment.h>
 
 //Cost added to specific move type
-#define LEFT_COST 0.
-#define RIGHT_COST 0.
-#define FORWARD_COST 0.
-#define BACKWARD_COST 0.
+#define LEFT_COST 1600.
+#define RIGHT_COST 1660.
+#define FORWARD_COST 965.
+#define BACKWARD_COST (LEFT_COST + RIGHT_COST)
 
 #define MOVE_COST 1. //Cost added to all move types
-#define PUSH_COST 0.1 //Cost for pushing a box(added to the above moves)
+#define PUSH_COST 2578 //Cost for pushing a box(added to the above moves)
 
 
 class Sokoban_Board;

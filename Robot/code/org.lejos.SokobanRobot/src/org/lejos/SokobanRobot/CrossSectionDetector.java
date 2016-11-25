@@ -12,8 +12,9 @@ public class CrossSectionDetector  extends Thread implements Behavior {
 
     //Thread CD_tread = new Thread(new CrossDetectorThread()).start();
     private boolean suppressed = false;
-    LightSensor cross_light = new LightSensor(SensorPort.S1);
-    int last_light_val = cross_light.readValue();
+    LightSensor_Access light = new LightSensor_Access();
+
+    int last_light_val = light.get_cross();
     private boolean cross_section = false;
     private static CrossSectionDetector instance = null;
     private Thread cross_thread = null;
@@ -22,9 +23,9 @@ public class CrossSectionDetector  extends Thread implements Behavior {
 
     private double last_diff = 0;
 
-    private RunningAverage RA_5 = new RunningAverage(frequency / 200, cross_light.readValue()); //2.5 ms    //was 100
-    private RunningAverage RA_25 = new RunningAverage(frequency / 40, cross_light.readValue()); //50 ms
-    private RunningAverage RA_100 = new RunningAverage(frequency / 20, cross_light.readValue()); //100 ms   //was 10
+    private RunningAverage RA_5 = new RunningAverage(frequency / 200, light.get_cross()); //2.5 ms    //was 100
+    private RunningAverage RA_25 = new RunningAverage(frequency / 40, light.get_cross()); //50 ms
+    private RunningAverage RA_100 = new RunningAverage(frequency / 20, light.get_cross()); //100 ms   //was 10
 
     private int counter = 0;
 
@@ -35,9 +36,9 @@ public class CrossSectionDetector  extends Thread implements Behavior {
     {
         int i = 0;
 
-        RA_5.fill_with_samples(cross_light.readValue());
-        RA_25.fill_with_samples(cross_light.readValue());
-        RA_100.fill_with_samples(cross_light.readValue());
+        RA_5.fill_with_samples(light.get_cross());
+        RA_25.fill_with_samples(light.get_cross());
+        RA_100.fill_with_samples(light.get_cross());
 
         while(!stop)
         {
@@ -46,7 +47,7 @@ public class CrossSectionDetector  extends Thread implements Behavior {
             }
             catch(InterruptedException e){}
 
-            int cur_val = cross_light.readValue();
+            int cur_val = light.get_cross();
 
             RA_5.add_sample(cur_val);
             RA_25.add_sample(cur_val);

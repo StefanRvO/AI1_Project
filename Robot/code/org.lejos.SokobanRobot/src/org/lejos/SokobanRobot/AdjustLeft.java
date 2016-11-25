@@ -9,13 +9,12 @@ import lejos.robotics.subsumption.Behavior;
 
 public class AdjustLeft  extends DriveForward implements Behavior {
     private int light_threshold = 10;
-    LightSensor linelight_right = new LightSensor(SensorPort.S3);
-    LightSensor linelight_left = new LightSensor(SensorPort.S4);
-    private int diff = linelight_right.readValue() - linelight_left.readValue();
+    LightSensor_Access light = new LightSensor_Access();
+    private int diff = light.get_right() - light.get_left();
     protected static AdjustLeft inherited_instance = null;
 
     public boolean takeControl() {
-        diff = linelight_right.readValue() - linelight_left.readValue();
+        diff = light.get_right() - light.get_left();
 
         if( diff > light_threshold ) return true;
         return false;
