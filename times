@@ -1,3 +1,7 @@
-
-4:49, 0.5 0.7
-
+Time 	Forward_speed 	turn speed
+4:49 	0.7 		0.35
+4:02  	0.7 		0.7	//	Move optimal
+4:05	0.7		0.7	//	Push optimal
+3:56	0.7		0.7	//	Move-bias
+3:52	0.7		0.7	//	Move-bias-- charged
+3:28	0.9		0.7

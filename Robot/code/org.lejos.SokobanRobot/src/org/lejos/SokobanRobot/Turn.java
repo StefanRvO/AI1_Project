@@ -60,11 +60,13 @@ public class Turn  extends Thread implements Behavior {
     }
 
     public void action() {
-        MotorL.setSpeed( Settings.get_max_backward_speed());
-        MotorR.setSpeed( Settings.get_max_backward_speed());
+        MotorL.setSpeed( Settings.get_max_turn_speed());
+        MotorR.setSpeed( Settings.get_max_turn_speed());
 
         if(this.direction == Direction.back){
             //System.out.println("Doing a 180");
+            MotorL.setSpeed( Settings.get_max_backward_speed());
+            MotorR.setSpeed( Settings.get_max_backward_speed());
             MotorL.backward();
             MotorR.backward();
 
@@ -109,15 +111,9 @@ public class Turn  extends Thread implements Behavior {
                 *   and the robot does turn far enough away from the black line
                 */
 
-                Thread.sleep(450); //Wait to turn away from line
+                Thread.sleep(250); //Wait to turn away from line
                 RA_R.fill_with_samples(linelight_right.readValue());
                 RA_L.fill_with_samples(linelight_left.readValue());
-
-                if(false){
-                    MotorL.setSpeed(0);
-                    MotorR.setSpeed(0);
-                    while(true);
-                }
             }
             catch(InterruptedException e) {}
 

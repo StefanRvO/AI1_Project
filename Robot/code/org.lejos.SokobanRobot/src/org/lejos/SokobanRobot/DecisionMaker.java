@@ -25,8 +25,9 @@ public class DecisionMaker  implements Behavior {
     //String lol = "flffFbffrfFbflfffffFbfrfrffrffrfrfFbfrffrfflffflffFbflflfrffrfrffFbffrfrfFbflflfffffFbfrffrffrfrfFbffrffrfrfFbfrffrfflffflfFbflflflffffFbfflffrffrfFbfrfrfrfffFbflflflffFbffrflffrfrfFbfrfrfrffFbflflflfFbflfFbfffffrffrfffF";
     //String lol = "fFbrrfrrfFbllfllFbrrfrrFbllfllFbrrfrrFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfllFbrrfrrfFbllfll";
     //String lol = "FbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrFbrF";
-    String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrfFbfrrFbllffffFbfrflfflFblllffFblllfFbllrfrrFbfrfrrFbrfflfrfrFbrrrfffFbflfrrFbrrrfFblllFblFbffffrfrffF";
-
+    //String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfflfrrFbrrrfffFbfrflfflFbfrfffffrrFbfrfrrFbrffflrfrrffFblllfFbfrffrfrffFbffflfrlrfrrfFbfrrFbllfffFbrflfflFblllffFblllFblF"; //push optimal
+    //String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrfFbfrrFbllffffFbrfrfrrFbfrfrrFbrfrflfflFblllfffFbflfrfrFbrrrffFblllfFbfrlfrrFbrrrfFblllFblFbffffrfrffF" //move optimal.
+    String lol = "fFbrrFbflrlfllFblfFbfrFblffffFbrrfrfrrFbrfrflfflfFbllrfrrffffffFbrfrfrrFbfrfrrFbrfflfrfrFbrfrfrFbllfffFbrflfflFblllffFblllfFbffrlrrFbrrrfFblllFblFbffffrfrffF"; //forward bias
     private static DecisionMaker instance = null;
 
     //String lol = "ffbrfrfrffb";
@@ -78,7 +79,7 @@ public class DecisionMaker  implements Behavior {
         }
         else if (this.lol.charAt(this.position) == 'F'){
             cross_detector.set_suspend_crossdector( 100 );
-            DriveForward.set_goal_degrees(480);
+            DriveForward.set_goal_degrees(460);
         }
         else if(this.lol.charAt(this.position) == 'l'){
             turner.doTurn(Direction.left, 1, false);
@@ -112,7 +113,7 @@ public class DecisionMaker  implements Behavior {
             MotorR.setSpeed( Settings.get_max_forward_speed() );
 
             try{
-                Thread.sleep( 200 );
+                Thread.sleep( 100 );
             }
             catch(InterruptedException e){}
 
