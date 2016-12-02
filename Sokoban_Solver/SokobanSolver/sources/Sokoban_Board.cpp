@@ -169,6 +169,26 @@ Sokoban_Board::Sokoban_Board(std::string &board_str)
                 collumn.push_back(board_vec[y][x]);
         }
     }
+    //Mark fields outside map as walls.
+    for(uint32_t x = 1; x < this->size_x -1; x++ )
+    {
+        //Make sure only to make a wavefront inside the map
+        uint32_t y_limit_low = 0;
+        uint32_t y_limit_high = this->size_y;
+        while(y_limit_low < this->size_y)
+        {
+            if(this->board[x][y_limit_low].is_solid()) break;
+            this->board[x][y_limit_low].type = Wall;
+            y_limit_low++;
+        }
+        while(y_limit_high > 0)
+        {
+            --y_limit_high;
+            if(this->board[x][y_limit_high].is_solid()) break;
+            this->board[x][y_limit_high].type = Wall;
+        }
+    }
+
     this->populate_neighbours();
     this->calc_reachable(Move_Direction::none);
     auto dead_fields = DeadLockDetector::get_static_deadlock_boxes(*this);
