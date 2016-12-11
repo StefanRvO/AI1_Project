@@ -44,7 +44,7 @@ void TunnelMacroCreator::compute_macros_internal()
             create_one_way_macro(box);
 
         //Print the created macro move
-        std::cout << *box << " ";
+        /*std::cout << *box << " ";
         for(auto &the_move : box->macro_move[0])
             std::cout << the_move << " ";
         std::cout << "| ";
@@ -57,7 +57,7 @@ void TunnelMacroCreator::compute_macros_internal()
         for(auto &the_move : box->macro_move[3])
             std::cout << the_move << " ";
 
-        std::cout << std::endl;
+        std::cout << std::endl;*/
     }
 
 }

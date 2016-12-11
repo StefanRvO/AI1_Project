@@ -161,6 +161,8 @@ int main(int argc, char **argv)
                 boost::replace_all(board_str, "J", "$");
                 boost::replace_all(board_str, "G", ".");
                 boost::replace_all(board_str, "M", "@");
+                boost::replace_all(board_str, "I", "*");
+
             }
         }
     }

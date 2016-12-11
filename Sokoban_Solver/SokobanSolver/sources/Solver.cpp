@@ -8,7 +8,7 @@ Solver::Solver(Sokoban_Board *_board, bool _silent)
 : silent(_silent), ttable(1000003)
 {
     this->board = _board;
-    std::cout << sizeof(bucket) << std::endl;
+    //std::cout << sizeof(bucket) << std::endl;
 }
 
 uint32_t Solver::get_box_move_count()
